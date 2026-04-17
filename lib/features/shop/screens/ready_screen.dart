@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_sweing_app/features/shop/screens/home_screen.dart';
 
 class ReadyScreen extends StatelessWidget {
   const ReadyScreen({super.key});
@@ -69,33 +70,40 @@ class ReadyScreen extends StatelessWidget {
                     const SizedBox(height: 30),
 
                     // 4. زر Let's Start
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // الانتقال لصفحة تسجيل الدخول
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDDE3FE), // اللون الأزرق الفاتح
-                            foregroundColor: Colors.black,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                          ),
-                          child: const Text(
-                            "Let's Start",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                 Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 40),
+  child: SizedBox(
+    width: double.infinity,
+    height: 50,
+    child: ElevatedButton(
+      onPressed: () {
+        // الانتقال لصفحة الهوم (HomeScreen) 
+        // نستخدم pushReplacement لكي لا يتمكن المستخدم من العودة لصفحة البداية عند الضغط على زر الرجوع
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFDDE3FE), // اللون الأزرق الفاتح
+        foregroundColor: Colors.black,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+      ),
+      child: const Text(
+        "Let's Start",
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+  ),
+),
                     
                     const SizedBox(height: 40),
                   ],
