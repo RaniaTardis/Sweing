@@ -16,10 +16,8 @@ class WarradApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Warrad Fashion',
       theme: AppTheme.lightTheme,
-      // إذا كنتِ تريدين الدخول مباشرة للنظام:
-      home: const MainWrapper(),
-      // أو إذا أردتِ البدء بصفحة الترحيب ثم الانتقال:
-      // home: const WelcomeScreen(),
+      // The app will now start here:
+      home: const SplashScreen(),
     );
   }
 }

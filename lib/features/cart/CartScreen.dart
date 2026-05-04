@@ -1,10 +1,49 @@
 import 'package:flutter/material.dart';
 
 class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+  final int? userId; // إضافة معرف المستخدم
+  const CartScreen({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
+    // إذا كان المستخدم ضيفاً، نعرض شاشة تطلب تسجيل الدخول قبل رؤية السلة
+    if (userId == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.blue),
+              const SizedBox(height: 20),
+              const Text(
+                "Your cart is waiting!",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Login to add items and manage your orders",
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  // هنا يمكنكِ التوجيه لصفحة الـ Login
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Login / Sign Up", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // إذا كان المستخدم مسجلاً، تظهر السلة الأصلية
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -15,7 +54,7 @@ class CartScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(color: const Color(0xFFDDE3FE), borderRadius: BorderRadius.circular(20)),
-              child: const Text("0", style: TextStyle(color: Colors.blue, fontSize: 14)),
+              child: const Text("0", style: TextStyle(color: Colors.blue, fontSize: 14)), // سيتم ربطه لاحقاً بعدد المنتجات في السيرفر
             ),
           ],
         ),
@@ -25,7 +64,7 @@ class CartScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // قسم عنوان الشحن (Shipping Address)
+            // قسم عنوان الشحن (Shipping Address)[cite: 4]
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: Container(
@@ -54,9 +93,8 @@ class CartScreen extends StatelessWidget {
                 ),
               ),
             ),
-
-            // أيقونة السلة الفارغة
             const SizedBox(height: 40),
+            // أيقونة السلة المركزية[cite: 4]
             Center(
               child: Container(
                 padding: const EdgeInsets.all(30),
@@ -67,9 +105,8 @@ class CartScreen extends StatelessWidget {
                 child: const Icon(Icons.shopping_bag, size: 80, color: Colors.blue),
               ),
             ),
-
-            // قسم من المفضلة (From Your Wishlist)
             const SizedBox(height: 40),
+            // قسم المقترحات من المفضلات[cite: 4]
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Align(
@@ -77,7 +114,7 @@ class CartScreen extends StatelessWidget {
                 child: Text("From Your Wishlist", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
-            _buildWishlistItemInCart(), // عنصر واحد للتجربة
+            _buildWishlistItemInCart(), 
           ],
         ),
       ),
@@ -85,6 +122,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
+  // الودجت الفرعية للسلة والمفضلات كما هي في تصميمك الأصلي[cite: 4]
   Widget _buildWishlistItemInCart() {
     return Padding(
       padding: const EdgeInsets.all(15.0),
@@ -141,7 +179,7 @@ class CartScreen extends StatelessWidget {
             ],
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {}, // Checkout Button
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.black,

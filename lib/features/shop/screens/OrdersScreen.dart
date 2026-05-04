@@ -1,12 +1,38 @@
 import 'package:flutter/material.dart';
 
 class OrdersScreen extends StatelessWidget {
-  const OrdersScreen({super.key});
+  final int? userId; // أضفنا الـ userId هنا
+  const OrdersScreen({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
+    if (userId == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey),
+              const SizedBox(height: 20),
+              const Text(
+                "Login to see your orders",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () {
+                  // هنا يمكنكِ الانتقال لصفحة Login
+                },
+                child: const Text("Go to Login"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return DefaultTabController(
-      length: 2, // تبويبين: قيد التنفيذ و المكتملة
+      length: 2, 
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(

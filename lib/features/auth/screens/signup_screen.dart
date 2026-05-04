@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // نحتاجها للتحكم في مدخلات الأرقام فقط
-// تأكد من استيراد صفحة اللوجن بشكل صحيح
+import 'package:flutter/services.dart';
+import 'dart:convert'; 
+import 'package:http/http.dart' as http; 
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -11,13 +12,74 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // متغير للتحكم في ظهور كلمة السر
   bool _isPasswordObscured = true;
+  bool _isLoading = false; 
 
-  // التحكم في رقم الهاتف ببادئة ثابتة
+  
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController(
     text: '+962 ',
   );
+
+  
+  Future<void> _signUp() async {
+
+    const String url = "http://192.168.100.15:3000/signup";
+
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "fullName": _nameController.text
+              .trim(), 
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text,
+          "phone": _phoneController.text.trim(),
+        }),
+      );
+
+      if (response.statusCode == 201) {
+    
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Account created successfully!")),
+        );
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+      } else {
+        
+        final errorData = jsonDecode(response.body);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorData['message'] ?? "Signup failed")),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: Could not connect to server")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +87,6 @@ class _SignupScreenState extends State<SignupScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. صورة الفتاة في الأعلى
           Positioned(
             top: 50,
             left: 0,
@@ -36,8 +97,6 @@ class _SignupScreenState extends State<SignupScreen> {
               fit: BoxFit.contain,
             ),
           ),
-
-          // 2. الحاوية الزرقاء والمحتويات
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -60,39 +119,38 @@ class _SignupScreenState extends State<SignupScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'please login to continue using the app',
+                      'please fill details to create an account',
                       style: TextStyle(color: Colors.black54),
                     ),
                     const SizedBox(height: 30),
 
-                    // حقول الإدخال العادية
-                    _buildTextField(hint: 'Full Name'),
+                    _buildTextField(
+                      hint: 'Full Name',
+                      controller: _nameController,
+                    ),
                     const SizedBox(height: 15),
-                    _buildTextField(hint: 'Email'),
+                    _buildTextField(
+                      hint: 'Email',
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 15),
-
-                    // حقل كلمة السر مع العين التفاعلية
                     _buildPasswordField(),
                     const SizedBox(height: 15),
-
-                    // حقل رقم الهاتف المطور
                     _buildPhoneField(),
 
                     const SizedBox(height: 40),
 
-                    // زر التسجيل
+             
                     SizedBox(
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // أضف وظيفة التسجيل هنا
-                        },
+                        onPressed: _isLoading ? null : _signUp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFD573),
                           shape: RoundedRectangleBorder(
@@ -100,22 +158,23 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Sign in',
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.black,
+                              )
+                            : const Text(
+                                'Sign up',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
 
                     const SizedBox(height: 20),
-
-                    // رابط الانتقال لصفحة تسجيل الدخول
                     _buildLoginLink(context),
-
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -127,9 +186,14 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // دالة بناء الحقول العادية
-  Widget _buildTextField({required String hint}) {
+  Widget _buildTextField({
+    required String hint,
+    required TextEditingController controller,
+    TextInputType? keyboardType,
+  }) {
     return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
@@ -146,9 +210,9 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // دالة بناء حقل كلمة السر مع التحكم بالعين
   Widget _buildPasswordField() {
     return TextField(
+      controller: _passwordController,
       obscureText: _isPasswordObscured,
       decoration: InputDecoration(
         hintText: 'Password',
@@ -169,39 +233,27 @@ class _SignupScreenState extends State<SignupScreen> {
                 : Icons.visibility_outlined,
             color: Colors.grey,
           ),
-          onPressed: () {
-            setState(() {
-              _isPasswordObscured = !_isPasswordObscured;
-            });
-          },
+          onPressed: () =>
+              setState(() => _isPasswordObscured = !_isPasswordObscured),
         ),
       ),
     );
   }
 
-  // دالة بناء حقل رقم الهاتف (أرقام فقط + كود ثابت)
   Widget _buildPhoneField() {
     return TextField(
       controller: _phoneController,
       keyboardType: TextInputType.number,
       inputFormatters: [
-        FilteringTextInputFormatter.allow(
-          RegExp(r'[0-9+]'),
-        ), // يسمح بالأرقام وعلامة + فقط
+
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]')),
       ],
       onChanged: (value) {
-        // منع المستخدم من حذف كود الدولة
+      
         if (!value.startsWith('+962 ')) {
-          _phoneController.text = '+962 ';
-          _phoneController.selection = TextSelection.fromPosition(
-            TextPosition(offset: _phoneController.text.length),
-          );
-        }
-        // التأكد من أن الطول الإجمالي لا يتجاوز الكود + 9 أرقام
-        if (value.length > 14) {
-          _phoneController.text = value.substring(0, 14);
-          _phoneController.selection = TextSelection.fromPosition(
-            TextPosition(offset: _phoneController.text.length),
+          _phoneController.value = TextEditingValue(
+            text: '+962 ',
+            selection: const TextSelection.collapsed(offset: 5),
           );
         }
       },
@@ -221,15 +273,12 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // دالة بناء رابط تسجيل الدخول
   Widget _buildLoginLink(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      },
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      ),
       child: RichText(
         text: TextSpan(
           style: const TextStyle(color: Colors.black54, fontSize: 14),
