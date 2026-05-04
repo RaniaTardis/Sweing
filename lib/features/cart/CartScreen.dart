@@ -6,7 +6,8 @@ import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 
 class CartScreen extends StatefulWidget {
   final int? userId;
-  const CartScreen({super.key, this.userId});
+  final VoidCallback? onOrderPlaced;
+  const CartScreen({super.key, this.userId, this.onOrderPlaced});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -53,7 +54,7 @@ class _CartScreenState extends State<CartScreen> {
         });
       }
     } catch (e) {
-      print('Load cart error: $e');
+      debugPrint('Load cart error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -74,7 +75,7 @@ class _CartScreenState extends State<CartScreen> {
         if (idx != -1) _cartItems[idx]['quantity'] = newQuantity;
       });
     } catch (e) {
-      print('Update quantity error: $e');
+      debugPrint('Update quantity error: $e');
     }
   }
 
@@ -90,7 +91,156 @@ class _CartScreenState extends State<CartScreen> {
         _cartItems.removeWhere((i) => i['cartId'] == cartId);
       });
     } catch (e) {
-      print('Remove cart error: $e');
+      debugPrint('Remove cart error: $e');
+    }
+  }
+
+  Future<void> _checkout() async {
+    final prefs = await SharedPreferences.getInstance();
+    final int? userId = widget.userId ?? prefs.getInt('userId');
+    if (userId == null || _userToken == null) return;
+
+    try {
+      final addrResponse = await http.get(
+        Uri.parse('http://localhost:3000/user/address/$userId'),
+        headers: {'Authorization': 'Bearer $_userToken'},
+      );
+
+      if (addrResponse.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please set a shipping address in Settings'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      final addrData = json.decode(addrResponse.body) as Map<String, dynamic>;
+      if (addrData.isEmpty || (addrData['fullAddress'] ?? '').isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please set a shipping address in Settings'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      _showConfirmationSheet(userId, addrData);
+    } catch (e) {
+      debugPrint('Checkout address check error: $e');
+    }
+  }
+
+  void _showConfirmationSheet(int userId, Map<String, dynamic> address) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Confirm Order',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Icon(Icons.location_on_outlined, color: Colors.blueAccent),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${address['fullAddress']}, ${address['city']}',
+                    style: const TextStyle(fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Items', style: TextStyle(color: Colors.grey)),
+                Text('${_cartItems.length}'),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  '${_total.toStringAsFixed(2)} JD',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF4CAF50)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _placeOrder(userId, ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text(
+                  'Confirm Order',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _placeOrder(int userId, BuildContext sheetCtx) async {
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/orders/checkout'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (_userToken != null) 'Authorization': 'Bearer $_userToken',
+        },
+        body: json.encode({'userId': userId}),
+      );
+
+      if (!mounted) return;
+      Navigator.pop(sheetCtx);
+
+      if (response.statusCode == 200) {
+        setState(() => _cartItems.clear());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order placed! 🎉'),
+            backgroundColor: Color(0xFF4CAF50),
+          ),
+        );
+        widget.onOrderPlaced?.call();
+      } else {
+        final data = json.decode(response.body);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['error'] ?? 'Checkout failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Place order error: $e');
     }
   }
 
@@ -109,8 +259,7 @@ class _CartScreenState extends State<CartScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shopping_cart_outlined,
-                  size: 80, color: Colors.blue),
+              const Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.blue),
               const SizedBox(height: 20),
               const Text('Your cart is waiting!',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
@@ -124,10 +273,8 @@ class _CartScreenState extends State<CartScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text('Login / Sign Up',
                     style: TextStyle(color: Colors.white)),
@@ -175,7 +322,7 @@ class _CartScreenState extends State<CartScreen> {
           : _cartItems.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
-                  padding: const EdgeInsets.all(15),
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 110),
                   itemCount: _cartItems.length,
                   itemBuilder: (context, index) =>
                       _buildCartItem(_cartItems[index]),
@@ -219,8 +366,7 @@ class _CartScreenState extends State<CartScreen> {
               children: [
                 Text(
                   item['productName'] ?? '',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -314,13 +460,12 @@ class _CartScreenState extends State<CartScreen> {
               const Text('Total', style: TextStyle(color: Colors.grey)),
               Text(
                 '${_total.toStringAsFixed(2)} JD',
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: _checkout,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,

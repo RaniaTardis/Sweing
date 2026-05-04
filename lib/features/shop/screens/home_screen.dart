@@ -25,6 +25,24 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isGuest = false;
   late final List<Map<String, dynamic>> dresses;
   late final List<Map<String, dynamic>> categories;
+  final _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  List<Map<String, dynamic>> get _filteredDresses {
+    if (_searchQuery.isEmpty) return dresses;
+    final q = _searchQuery.toLowerCase();
+    return dresses.where((d) {
+      final name = (d['name'] ?? '').toString().toLowerCase();
+      final cat = (d['category'] ?? '').toString().toLowerCase();
+      return name.contains(q) || cat.contains(q);
+    }).toList();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -258,10 +276,21 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _searchQuery = v),
                   decoration: InputDecoration(
                     hintText: 'Search dresses & gowns...',
                     hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
                     border: InputBorder.none,
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -879,6 +908,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProductGrid() {
+    final filtered = _filteredDresses;
+    if (filtered.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text('No results for "$_searchQuery"',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+            ],
+          ),
+        ),
+      );
+    }
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -889,9 +934,9 @@ class _HomeScreenState extends State<HomeScreen> {
         childAspectRatio: 0.78,
         mainAxisExtent: 280,
       ),
-      itemCount: dresses.length,
+      itemCount: filtered.length,
       itemBuilder: (context, index) {
-        final dress = dresses[index];
+        final dress = filtered[index];
         return GestureDetector(
           onTap: () => Navigator.push(
             context,

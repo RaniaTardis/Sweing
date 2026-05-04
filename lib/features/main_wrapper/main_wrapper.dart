@@ -16,9 +16,10 @@ class MainWrapper extends StatefulWidget {
 class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
   int? currentUserId;
-  bool _isInitializing = true; // متغير للتحقق من انتهاء تحميل البيانات
+  bool _isInitializing = true;
   int _wishlistKey = 0;
   int _cartKey = 0;
+  int _ordersKey = 0;
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _MainWrapperState extends State<MainWrapper> {
       if (mounted) {
         setState(() {
           currentUserId = prefs.getInt('userId');
-          _isInitializing = false; // تم التحميل بنجاح
+          _isInitializing = false;
         });
       }
     } catch (e) {
@@ -43,16 +44,20 @@ class _MainWrapperState extends State<MainWrapper> {
     }
   }
 
-  // دالة لبناء الصفحات لضمان تحديثها عند تغير الحالة
+  void _onOrderPlaced() {
+    setState(() {
+      _ordersKey++;
+      _selectedIndex = 2;
+    });
+  }
+
   List<Widget> _buildPages() {
     return [
-      // نمرر الـ userId للـ HomeScreen لضمان مزامنة البيانات
       HomeScreen(userId: currentUserId),
 
-      // صفحة المفضلات: إذا كان ضيفاً تظهر رسالة، وإذا كان مستخدماً تظهر الصفحة
       currentUserId != null
           ? WishlistPage(key: ValueKey(_wishlistKey), userId: currentUserId!)
-          : Center(
+          : const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -66,15 +71,18 @@ class _MainWrapperState extends State<MainWrapper> {
               ),
             ),
 
-      OrdersScreen(userId: currentUserId),
-      CartScreen(key: ValueKey(_cartKey), userId: currentUserId),
-      const SettingsScreen(),
+      OrdersScreen(key: ValueKey(_ordersKey), userId: currentUserId),
+      CartScreen(
+        key: ValueKey(_cartKey),
+        userId: currentUserId,
+        onOrderPlaced: _onOrderPlaced,
+      ),
+      SettingsScreen(userId: currentUserId),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    // عرض شاشة تحميل بسيطة حتى يتم جلب البيانات من الـ Memory
     if (_isInitializing) {
       return const Scaffold(
         body: Center(
@@ -84,13 +92,13 @@ class _MainWrapperState extends State<MainWrapper> {
     }
 
     return Scaffold(
-      // استخدام IndexedStack يحافظ على حالة الصفحات عند التنقل
       body: IndexedStack(index: _selectedIndex, children: _buildPages()),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
             if (index == 1) _wishlistKey++;
+            if (index == 2) _ordersKey++;
             if (index == 3) _cartKey++;
             _selectedIndex = index;
           });
