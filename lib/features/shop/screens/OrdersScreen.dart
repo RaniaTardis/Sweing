@@ -126,6 +126,8 @@ class OrdersScreen extends StatelessWidget {
                       backgroundColor: isCompleted ? Colors.grey[200] : Colors.blueAccent,
                       foregroundColor: isCompleted ? Colors.black : Colors.white,
                       elevation: 0,
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     child: Text(isCompleted ? "Reorder" : "Track Order"),

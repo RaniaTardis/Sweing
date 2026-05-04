@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/features/cart/Wishlist.dart';
 import 'package:my_sweing_app/features/shop/screens/AllReviewsScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> dress;
@@ -16,6 +19,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   int selectedImageIndex = 0;
   bool isWishlisted = false; // ✅ NEW: Wishlist toggle state
   final PageController _pageController = PageController();
+  bool _isAddingToCart = false;
 
   late List<String> dressImages;
 
@@ -43,16 +47,73 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       SnackBar(
         content: Text(
           isWishlisted
-              ? '${widget.dress['name']} removed from wishlist'
-              : '${widget.dress['name']} added to wishlist! ❤️',
+              ? '${widget.dress['name']} added to wishlist! ❤️'
+              : '${widget.dress['name']} removed from wishlist',
         ),
         backgroundColor:
-            isWishlisted ? Colors.grey[700] : const Color(0xFF4CAF50),
+            isWishlisted ? const Color(0xFF4CAF50) : Colors.grey[700],
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  Future<void> _addToCart() async {
+    if (_isAddingToCart) return;
+    setState(() => _isAddingToCart = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int? userId = prefs.getInt('userId');
+      final String? token = prefs.getString('userToken');
+
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to add to cart')),
+        );
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/cart/add'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'userId': userId,
+          'productId': widget.dress['id'],
+          'productName': widget.dress['name'],
+          'productPrice': widget.dress['price'],
+          'productImage': widget.dress['image'],
+        }),
+      );
+
+      final data = json.decode(response.body);
+      final isAlready = data['status'] == 'already_in_cart';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isAlready
+              ? '${widget.dress['name']} is already in cart'
+              : '${widget.dress['name']} added to cart! 🛒'),
+          backgroundColor:
+              isAlready ? Colors.orange : const Color(0xFF4CAF50),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cart error. Please try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _isAddingToCart = false);
+    }
   }
 
   @override
@@ -479,18 +540,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             const SizedBox(width: 15),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text('${widget.dress['name']} added to cart! 🛒'),
-                      backgroundColor: const Color(0xFF4CAF50),
-                    ),
-                  );
-                },
+                onPressed: _isAddingToCart ? null : _addToCart,
                 icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                label: const Text("Add to Cart",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                label: Text(
+                  _isAddingToCart ? 'Adding...' : 'Add to Cart',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4CAF50),
                   padding: const EdgeInsets.symmetric(vertical: 16),

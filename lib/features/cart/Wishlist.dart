@@ -22,8 +22,12 @@ class _WishlistPageState extends State<WishlistPage> {
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
-    _loadWishlist();
+    _initAndLoad();
+  }
+
+  Future<void> _initAndLoad() async {
+    await _checkAuthStatus();
+    await _loadWishlist();
   }
 
   Future<void> _checkAuthStatus() async {
@@ -44,10 +48,12 @@ class _WishlistPageState extends State<WishlistPage> {
       if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
     };
 
-    // ✅ Use userId if available (for authenticated users)
-    String url = 'http://192.168.100.15:3000/wishlist';
-    if (widget.userId != null) {
-      url += '?userId=${widget.userId}';
+    final prefs = await SharedPreferences.getInstance();
+    final int? userId = widget.userId ?? prefs.getInt('userId');
+
+    String url = 'http://localhost:3000/wishlist';
+    if (userId != null) {
+      url += '?userId=$userId';
     }
 
     final response = await http.get(
@@ -72,27 +78,24 @@ class _WishlistPageState extends State<WishlistPage> {
 
 Future<void> _toggleWishlist(int productId) async {
   try {
-    final response = await http.post(
-      Uri.parse('http://192.168.100.15:3000/wishlist/toggle'),
+    final item = wishlistItems.firstWhere((i) => i['productId'] == productId);
+    final wishlistId = item['wishlistId'];
+
+    final response = await http.delete(
+      Uri.parse('http://localhost:3000/wishlist/$wishlistId'),
       headers: {
-        'Content-Type': 'application/json',
         if (_userToken != null) 'Authorization': 'Bearer $_userToken',
         if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
       },
-      body: json.encode({
-        'userId': widget.userId, // ✅ Pass userId
-        'productId': productId,
-      }),
     );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 200) {
       setState(() {
         wishlistItems.removeWhere((item) => item['productId'] == productId);
       });
-      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Removed from wishlist! ♥'),
+          content: Text('Removed from wishlist'),
           backgroundColor: Colors.grey,
         ),
       );
@@ -104,32 +107,39 @@ Future<void> _toggleWishlist(int productId) async {
 
   Future<void> _addToCart(int productId) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final int? userId = widget.userId ?? prefs.getInt('userId');
+
       final item = wishlistItems.firstWhere((i) => i['productId'] == productId);
-      
+
       final response = await http.post(
-        Uri.parse('http://192.168.100.15:3000/cart/add'),
+        Uri.parse('http://localhost:3000/cart/add'),
         headers: {
           'Content-Type': 'application/json',
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',
-          if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
         },
         body: json.encode({
+          'userId': userId,
           'productId': productId,
           'productName': item['productName'],
           'productPrice': item['productPrice'],
           'productImage': item['productImage'],
-          'quantity': 1,
         }),
       );
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item['productName']} added to cart! 🛒'),
-            backgroundColor: const Color(0xFF4CAF50),
-          ),
-        );
-      }
+      final data = json.decode(response.body);
+      final isAlready = data['status'] == 'already_in_cart';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isAlready
+              ? '${item['productName']} is already in cart'
+              : '${item['productName']} added to cart! 🛒'),
+          backgroundColor:
+              isAlready ? Colors.orange : const Color(0xFF4CAF50),
+        ),
+      );
     } catch (e) {
       print('Add to cart error: $e');
     }

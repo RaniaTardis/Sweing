@@ -17,6 +17,8 @@ class _MainWrapperState extends State<MainWrapper> {
   int _selectedIndex = 0;
   int? currentUserId;
   bool _isInitializing = true; // متغير للتحقق من انتهاء تحميل البيانات
+  int _wishlistKey = 0;
+  int _cartKey = 0;
 
   @override
   void initState() {
@@ -49,7 +51,7 @@ class _MainWrapperState extends State<MainWrapper> {
 
       // صفحة المفضلات: إذا كان ضيفاً تظهر رسالة، وإذا كان مستخدماً تظهر الصفحة
       currentUserId != null
-          ? WishlistPage(userId: currentUserId!)
+          ? WishlistPage(key: ValueKey(_wishlistKey), userId: currentUserId!)
           : Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +67,7 @@ class _MainWrapperState extends State<MainWrapper> {
             ),
 
       OrdersScreen(userId: currentUserId),
-      const CartScreen(),
+      CartScreen(key: ValueKey(_cartKey), userId: currentUserId),
       const SettingsScreen(),
     ];
   }
@@ -88,6 +90,8 @@ class _MainWrapperState extends State<MainWrapper> {
         currentIndex: _selectedIndex,
         onTap: (index) {
           setState(() {
+            if (index == 1) _wishlistKey++;
+            if (index == 3) _cartKey++;
             _selectedIndex = index;
           });
         },

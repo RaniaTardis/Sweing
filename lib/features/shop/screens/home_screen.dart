@@ -402,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final response = await http.get(
         Uri.parse(
-          'http://192.168.100.15:3000/wishlist?userId=${widget.userId ?? 1}',
+          'http://localhost:3000/wishlist?userId=${widget.userId ?? 1}',
         ),
         headers: headers,
       );
@@ -431,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.100.15:3000/auth/login'),
+        Uri.parse('http://localhost:3000/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
@@ -765,10 +765,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final dress = dresses.firstWhere((d) => d['id'] == productId);
 
-      // ✅ Use correct endpoint for toggle/add
-      final url = _isGuest
-          ? 'http://192.168.100.15:3000/wishlist/add' // ADD endpoint for guests
-          : 'http://192.168.100.15:3000/wishlist/toggle';
+      const url = 'http://localhost:3000/wishlist/add';
 
       final response = await http.post(
         Uri.parse(url),
@@ -822,11 +819,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ Add to Cart (Guest & User)
   Future<void> _addToCart(int productId) async {
-    if (_guestSessionId == null && _userToken == null) {
+    final prefs = await SharedPreferences.getInstance();
+    final int? userId = widget.userId ?? prefs.getInt('userId');
+    final String? token = prefs.getString('userToken');
+
+    if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login or continue as guest')),
+        const SnackBar(content: Text('Please login to add to cart')),
       );
       return;
     }
@@ -835,37 +835,41 @@ class _HomeScreenState extends State<HomeScreen> {
       final dress = dresses.firstWhere((d) => d['id'] == productId);
 
       final response = await http.post(
-        Uri.parse('http://192.168.100.15:3000/cart/add'),
+        Uri.parse('http://localhost:3000/cart/add'),
         headers: {
           'Content-Type': 'application/json',
-          if (_userToken != null) 'Authorization': 'Bearer $_userToken',
-          if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
+          if (token != null) 'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'userId': _userToken != null ? null : 1,
-          'guestSessionId': _guestSessionId,
+          'userId': userId,
           'productId': productId,
           'productName': dress['name'],
           'productPrice': dress['price'],
           'productImage': dress['image'],
-          'quantity': 1,
         }),
       );
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.shopping_cart, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('${dress['name']} added to cart! 🛒'),
-              ],
-            ),
-            backgroundColor: const Color(0xFF4CAF50),
+      final data = json.decode(response.body);
+      final isAlready = data['status'] == 'already_in_cart';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isAlready ? Icons.info_outline : Icons.shopping_cart,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(isAlready
+                  ? '${dress['name']} is already in cart'
+                  : '${dress['name']} added to cart! 🛒'),
+            ],
           ),
-        );
-      }
+          backgroundColor:
+              isAlready ? Colors.orange : const Color(0xFF4CAF50),
+        ),
+      );
     } catch (e) {
       print('Cart error: $e');
       ScaffoldMessenger.of(context).showSnackBar(

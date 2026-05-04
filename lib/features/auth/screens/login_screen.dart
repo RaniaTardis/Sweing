@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse('http://localhost:3000/login');
+      final url = Uri.parse('http://localhost:3000/auth/login');
 
       final response = await http.post(
         url,
@@ -52,12 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         // ✅ حفظ userId في SharedPreferences
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(
-          'userId',
-          data['user']['id'],
-        ); // من الـ Backend response
+        await prefs.setInt('userId', data['user']['id']);
+        await prefs.setString('userToken', data['token']);
         await prefs.setString('userEmail', data['user']['email']);
-        await prefs.setString('userName', data['user']['fullName']);
+        await prefs.setString('userName', data['user']['name']);
 
         print('✅ User ID saved: ${data['user']['id']}');
 
@@ -68,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login failed')),
+          SnackBar(content: Text(data['error'] ?? 'Login failed')),
         );
       }
     } catch (e) {
@@ -92,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
             right: 0,
             height: MediaQuery.of(context).size.height * 0.35,
             child: Image.asset(
-              'assets/images/LoginGirl.png',
+              'assets/images/SignGirl.png',
               fit: BoxFit.contain,
             ),
           ),

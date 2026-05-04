@@ -26,7 +26,7 @@ class _SignupScreenState extends State<SignupScreen> {
   
   Future<void> _signUp() async {
 
-    const String url = "http://192.168.100.15:3000/signup";
+    const String url = "http://localhost:3000/auth/signup";
 
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
