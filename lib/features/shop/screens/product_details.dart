@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/features/cart/CartScreen.dart';
 import 'package:my_sweing_app/features/cart/Wishlist.dart';
 import 'package:my_sweing_app/features/shop/screens/AllReviewsScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,9 +19,12 @@ class ProductDetailsScreen extends StatefulWidget {
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   String selectedSize = 'S';
   int selectedImageIndex = 0;
-  bool isWishlisted = false; // ✅ NEW: Wishlist toggle state
+  bool isWishlisted = false;
   final PageController _pageController = PageController();
   bool _isAddingToCart = false;
+  List<Map<String, dynamic>> _reviews = [];
+  double _avgRating = 4.8;
+  int _reviewCount = 1;
 
   late List<String> dressImages;
 
@@ -32,6 +37,29 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           widget.dress['image'] ??
           'assets/images/placeholder.png',
     ];
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    final productId = widget.dress['id'];
+    if (productId == null) return;
+    try {
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/reviews?productId=$productId'),
+      );
+      if (response.statusCode == 200 && mounted) {
+        final data = List<Map<String, dynamic>>.from(json.decode(response.body));
+        double avg = 4.8;
+        if (data.isNotEmpty) {
+          avg = data.fold<num>(0, (s, r) => s + (r['rating'] as num)) / data.length;
+        }
+        setState(() {
+          _reviews = data;
+          _avgRating = avg;
+          _reviewCount = data.length + 1;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -40,18 +68,65 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     super.dispose();
   }
 
-  // ✅ NEW: Wishlist toggle handler
-  void _toggleWishlist() {
-    setState(() => isWishlisted = !isWishlisted);
+  Future<void> _toggleWishlist() async {
+    final loc = AppLocalizations.of(context);
+    final prefs = await SharedPreferences.getInstance();
+    final int? userId = prefs.getInt('userId');
+    final String? token = prefs.getString('userToken');
+
+    if (userId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.t('please_login_wishlist'))),
+      );
+      return;
+    }
+
+    final adding = !isWishlisted;
+
+    if (adding) {
+      try {
+        final response = await http.post(
+          Uri.parse('http://localhost:3000/wishlist/add'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+          body: json.encode({
+            'userId': userId,
+            'productId': widget.dress['id'],
+            'productName': widget.dress['name'],
+            'productPrice': widget.dress['price'],
+            'productImage': widget.dress['image'],
+          }),
+        );
+
+        if (response.statusCode != 200) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.t('failed_wishlist'))),
+          );
+          return;
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.t('wishlist_error'))),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => isWishlisted = adding);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isWishlisted
-              ? '${widget.dress['name']} added to wishlist! ❤️'
-              : '${widget.dress['name']} removed from wishlist',
+          adding
+              ? '${widget.dress['name']} ${loc.t('added_to_wishlist')}'
+              : '${widget.dress['name']} ${loc.t('removed_from_wishlist')}',
         ),
-        backgroundColor:
-            isWishlisted ? const Color(0xFF4CAF50) : Colors.grey[700],
+        backgroundColor: adding ? const Color(0xFF4CAF50) : Colors.grey[700],
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -60,6 +135,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   }
 
   Future<void> _addToCart() async {
+    final loc = AppLocalizations.of(context);
     if (_isAddingToCart) return;
     setState(() => _isAddingToCart = true);
 
@@ -70,7 +146,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
       if (userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to add to cart')),
+          SnackBar(content: Text(loc.t('please_login_cart'))),
         );
         return;
       }
@@ -87,29 +163,38 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           'productName': widget.dress['name'],
           'productPrice': widget.dress['price'],
           'productImage': widget.dress['image'],
+          'size': selectedSize,
         }),
       );
 
       final data = json.decode(response.body);
-      final isAlready = data['status'] == 'already_in_cart';
+      final status = data['status'];
 
       if (!mounted) return;
+      final String message;
+      final Color color;
+      if (status == 'already_in_cart') {
+        message = '${widget.dress['name']} ${loc.t('already_in_cart')}';
+        color = Colors.orange;
+      } else if (status == 'size_updated') {
+        message = loc.t('size_updated', params: {'size': selectedSize});
+        color = Colors.blue;
+      } else {
+        message = '${widget.dress['name']} ${loc.t('added_to_cart')}';
+        color = const Color(0xFF4CAF50);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isAlready
-              ? '${widget.dress['name']} is already in cart'
-              : '${widget.dress['name']} added to cart! 🛒'),
-          backgroundColor:
-              isAlready ? Colors.orange : const Color(0xFF4CAF50),
+          content: Text(message),
+          backgroundColor: color,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cart error. Please try again.')),
+        SnackBar(content: Text(loc.t('cart_error'))),
       );
     } finally {
       if (mounted) setState(() => _isAddingToCart = false);
@@ -118,6 +203,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final dress = widget.dress;
 
     return Scaffold(
@@ -127,7 +213,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         elevation: 0,
         leading: const BackButton(color: Colors.black),
         actions: [
-          // ✅ NEW: Like/Heart button in AppBar
           IconButton(
             onPressed: _toggleWishlist,
             icon: AnimatedSwitcher(
@@ -145,7 +230,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final userId = prefs.getInt('userId');
+              if (!mounted) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CartScreen(userId: userId)),
+              );
+            },
             icon: const Icon(Icons.shopping_bag_outlined, color: Colors.black),
           ),
         ],
@@ -154,7 +247,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Gallery
             Container(
               margin: const EdgeInsets.all(20),
               height: 380,
@@ -193,14 +285,14 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey[200],
-                                child: const Column(
+                                child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.image_not_supported,
+                                    const Icon(Icons.image_not_supported,
                                         size: 64, color: Colors.grey),
-                                    SizedBox(height: 8),
-                                    Text('Image not available',
-                                        style: TextStyle(color: Colors.grey)),
+                                    const SizedBox(height: 8),
+                                    Text(loc.t('image_not_available'),
+                                        style: const TextStyle(color: Colors.grey)),
                                   ],
                                 ),
                               );
@@ -210,7 +302,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       },
                     ),
 
-                    // ✅ NEW: Floating heart button on the image
                     Positioned(
                       top: 16,
                       right: 16,
@@ -243,7 +334,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                     ),
 
-                    // Dots Indicator
                     Positioned(
                       bottom: 20,
                       left: 0,
@@ -269,7 +359,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                     ),
 
-                    // Swipe arrows
                     if (dressImages.length > 1) ...[
                       Positioned(
                         left: 10,
@@ -340,7 +429,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ),
                           ),
                           Text(
-                            "${dress['category']} • Premium Quality",
+                            "${dress['category']} • ${loc.t('premium_quality')}",
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 14,
@@ -361,17 +450,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Size Selector
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Size",
-                          style: TextStyle(
+                      Text(loc.t('size'),
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       TextButton(
                         onPressed: () {},
-                        child: const Text("Size Guide",
-                            style: TextStyle(color: Colors.grey)),
+                        child: Text(loc.t('size_guide'),
+                            style: const TextStyle(color: Colors.grey)),
                       ),
                     ],
                   ),
@@ -413,75 +501,99 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
                   const SizedBox(height: 30),
 
-                  const Text("Description",
-                      style: TextStyle(
+                  Text(loc.t('description'),
+                      style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Text(
-                    "Elegant ${dress['name']} made with premium fabrics. Perfect for any special occasion. "
-                    "Available for ${dress['category']}. Custom tailoring available upon request. "
-                    "High quality craftsmanship guaranteed.",
+                    loc.t('description_template', params: {'name': dress['name'], 'category': dress['category']}),
                     style: const TextStyle(
                         color: Colors.black87, height: 1.6, fontSize: 16),
                   ),
 
                   const SizedBox(height: 30),
 
-                  // Reviews Section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Reviews",
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text(
+                        "${loc.t('reviews')} ($_reviewCount)",
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                       TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                    const AllReviewsScreen()),
-                          );
+                              builder: (context) => AllReviewsScreen(
+                                productId: widget.dress['id'],
+                              ),
+                            ),
+                          ).then((_) => _loadReviews());
                         },
-                        child: const Text("View All",
-                            style: TextStyle(color: Colors.grey)),
+                        child: Text(loc.t('view_all_reviews'),
+                            style: const TextStyle(color: Colors.grey)),
                       ),
                     ],
                   ),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundImage: NetworkImage(
-                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop"),
-                    ),
-                    title: const Text("Ronald Richards"),
-                    subtitle: const Text("13 Sep, 2020"),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  () {
+                    final preview = _reviews.isNotEmpty ? _reviews.first : null;
+                    final name = preview != null ? (preview['userName'] ?? 'User') : 'Ronald Richards';
+                    final rating = preview != null ? (preview['rating'] as num).toInt() : 5;
+                    final comment = preview != null
+                        ? (preview['comment'] ?? '')
+                        : 'Absolutely stunning dress! Perfect fit and quality. Highly recommend!';
+                    final dateRaw = preview != null ? preview['createdAt'] : '2020-09-13T00:00:00';
+                    String dateStr = '13 Sep, 2020';
+                    if (dateRaw != null) {
+                      final dt = DateTime.tryParse(dateRaw.toString());
+                      if (dt != null) {
+                        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                        dateStr = '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
+                      }
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text("4.8 rating",
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(
-                            5,
-                            (i) => Icon(Icons.star,
-                                size: 14,
-                                color: i < 4
-                                    ? Colors.amber
-                                    : Colors.grey[300]),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.grey[200],
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                            ),
+                          ),
+                          title: Text(name),
+                          subtitle: Text(dateStr),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('${_avgRating.toStringAsFixed(1)} ${loc.t('rating')}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: List.generate(
+                                  5,
+                                  (i) => Icon(Icons.star,
+                                      size: 14,
+                                      color: i < rating
+                                          ? Colors.amber
+                                          : Colors.grey[300]),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 72),
+                          child: Text(comment,
+                              style: const TextStyle(color: Colors.grey)),
+                        ),
                       ],
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 72),
-                    child: Text(
-                      "Absolutely stunning dress! Perfect fit and quality. Highly recommend!",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ),
+                    );
+                  }(),
 
                   const SizedBox(height: 120),
                 ],
@@ -506,15 +618,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ),
         child: Row(
           children: [
-            // ✅ UPDATED: Add to Wishlist button (toggles + navigates)
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  if (!isWishlisted) _toggleWishlist(); // add first if not yet
+                onPressed: () async {
+                  if (!isWishlisted) await _toggleWishlist();
+                  if (!mounted) return;
+                  final prefs = await SharedPreferences.getInstance();
+                  final userId = prefs.getInt('userId');
+                  if (!mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const WishlistPage()),
+                        builder: (context) => WishlistPage(userId: userId)),
                   );
                 },
                 icon: Icon(
@@ -522,7 +637,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   color: const Color(0xFF4CAF50),
                 ),
                 label: Text(
-                  isWishlisted ? "In Wishlist ✓" : "Add to Wishlist",
+                  isWishlisted ? loc.t('in_wishlist') : loc.t('add_to_wishlist'),
                   style: const TextStyle(
                     color: Color(0xFF4CAF50),
                     fontWeight: FontWeight.bold,
@@ -543,7 +658,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 onPressed: _isAddingToCart ? null : _addToCart,
                 icon: const Icon(Icons.shopping_cart, color: Colors.white),
                 label: Text(
-                  _isAddingToCart ? 'Adding...' : 'Add to Cart',
+                  _isAddingToCart ? loc.t('adding') : loc.t('add_to_cart'),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(

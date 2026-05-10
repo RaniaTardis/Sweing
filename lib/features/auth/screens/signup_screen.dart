@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:convert'; 
-import 'package:http/http.dart' as http; 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -13,9 +14,8 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordObscured = true;
-  bool _isLoading = false; 
+  bool _isLoading = false;
 
-  
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -23,8 +23,8 @@ class _SignupScreenState extends State<SignupScreen> {
     text: '+962 ',
   );
 
-  
   Future<void> _signUp() async {
+    final loc = AppLocalizations.of(context);
 
     const String url = "http://localhost:3000/auth/signup";
 
@@ -33,7 +33,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Please fill all fields")));
+      ).showSnackBar(SnackBar(content: Text(loc.t('please_fill_all'))));
       return;
     }
 
@@ -44,8 +44,7 @@ class _SignupScreenState extends State<SignupScreen> {
         Uri.parse(url),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "fullName": _nameController.text
-              .trim(), 
+          "fullName": _nameController.text.trim(),
           "email": _emailController.text.trim(),
           "password": _passwordController.text,
           "phone": _phoneController.text.trim(),
@@ -53,18 +52,16 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (response.statusCode == 201) {
-    
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Account created successfully!")),
+          SnackBar(content: Text(loc.t('account_created'))),
         );
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       } else {
-        
         final errorData = jsonDecode(response.body);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +71,7 @@ class _SignupScreenState extends State<SignupScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: Could not connect to server")),
+        SnackBar(content: Text(loc.t('connect_error'))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -83,6 +80,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -114,27 +112,27 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    const Text(
-                      'Sign Up , NOW',
-                      style: TextStyle(
+                    Text(
+                      loc.t('sign_up_now_title'),
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'please fill details to create an account',
-                      style: TextStyle(color: Colors.black54),
+                    Text(
+                      loc.t('signup_subtitle'),
+                      style: const TextStyle(color: Colors.black54),
                     ),
                     const SizedBox(height: 30),
 
                     _buildTextField(
-                      hint: 'Full Name',
+                      hint: loc.t('full_name'),
                       controller: _nameController,
                     ),
                     const SizedBox(height: 15),
                     _buildTextField(
-                      hint: 'Email',
+                      hint: loc.t('email'),
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                     ),
@@ -145,7 +143,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 40),
 
-             
                     SizedBox(
                       width: double.infinity,
                       height: 60,
@@ -162,9 +159,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             ? const CircularProgressIndicator(
                                 color: Colors.black,
                               )
-                            : const Text(
-                                'Sign up',
-                                style: TextStyle(
+                            : Text(
+                                loc.t('sign_up'),
+                                style: const TextStyle(
                                   fontSize: 22,
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -211,11 +208,12 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildPasswordField() {
+    final loc = AppLocalizations.of(context);
     return TextField(
       controller: _passwordController,
       obscureText: _isPasswordObscured,
       decoration: InputDecoration(
-        hintText: 'Password',
+        hintText: loc.t('password'),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -241,15 +239,14 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildPhoneField() {
+    final loc = AppLocalizations.of(context);
     return TextField(
       controller: _phoneController,
       keyboardType: TextInputType.number,
       inputFormatters: [
-
         FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s]')),
       ],
       onChanged: (value) {
-      
         if (!value.startsWith('+962 ')) {
           _phoneController.value = TextEditingValue(
             text: '+962 ',
@@ -258,7 +255,7 @@ class _SignupScreenState extends State<SignupScreen> {
         }
       },
       decoration: InputDecoration(
-        hintText: 'Phone Number',
+        hintText: loc.t('phone_number'),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -274,6 +271,7 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Widget _buildLoginLink(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -283,9 +281,9 @@ class _SignupScreenState extends State<SignupScreen> {
         text: TextSpan(
           style: const TextStyle(color: Colors.black54, fontSize: 14),
           children: [
-            const TextSpan(text: "Already got an account, "),
+            TextSpan(text: loc.t('have_account')),
             TextSpan(
-              text: "LOG IN now !!",
+              text: loc.t('log_in_now_link'),
               style: TextStyle(
                 color: Colors.blue.shade900,
                 fontWeight: FontWeight.bold,

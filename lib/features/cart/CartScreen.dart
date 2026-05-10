@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 
 class CartScreen extends StatefulWidget {
   final int? userId;
@@ -17,6 +18,7 @@ class _CartScreenState extends State<CartScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _cartItems = [];
   String? _userToken;
+  int? _effectiveUserId;
 
   @override
   void initState() {
@@ -27,14 +29,14 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _initAndLoad() async {
     final prefs = await SharedPreferences.getInstance();
     _userToken = prefs.getString('userToken');
+    _effectiveUserId = widget.userId ?? prefs.getInt('userId');
     await _loadCart();
   }
 
   Future<void> _loadCart() async {
     setState(() => _isLoading = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final int? userId = widget.userId ?? prefs.getInt('userId');
+      final userId = _effectiveUserId;
       if (userId == null) {
         setState(() => _isLoading = false);
         return;
@@ -96,8 +98,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _checkout() async {
-    final prefs = await SharedPreferences.getInstance();
-    final int? userId = widget.userId ?? prefs.getInt('userId');
+    final int? userId = _effectiveUserId;
     if (userId == null || _userToken == null) return;
 
     try {
@@ -108,9 +109,10 @@ class _CartScreenState extends State<CartScreen> {
 
       if (addrResponse.statusCode != 200) {
         if (!mounted) return;
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please set a shipping address in Settings'),
+          SnackBar(
+            content: Text(loc.t('set_address_settings')),
             backgroundColor: Colors.orange,
           ),
         );
@@ -120,9 +122,10 @@ class _CartScreenState extends State<CartScreen> {
       final addrData = json.decode(addrResponse.body) as Map<String, dynamic>;
       if (addrData.isEmpty || (addrData['fullAddress'] ?? '').isEmpty) {
         if (!mounted) return;
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please set a shipping address in Settings'),
+          SnackBar(
+            content: Text(loc.t('set_address_settings')),
             backgroundColor: Colors.orange,
           ),
         );
@@ -137,6 +140,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _showConfirmationSheet(int userId, Map<String, dynamic> address) {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -149,9 +153,9 @@ class _CartScreenState extends State<CartScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Confirm Order',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Text(
+              loc.t('confirm_order'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Row(
@@ -170,7 +174,7 @@ class _CartScreenState extends State<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Items', style: TextStyle(color: Colors.grey)),
+                Text(loc.t('items'), style: const TextStyle(color: Colors.grey)),
                 Text('${_cartItems.length}'),
               ],
             ),
@@ -178,7 +182,7 @@ class _CartScreenState extends State<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(loc.t('total'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 Text(
                   '${_total.toStringAsFixed(2)} JD',
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF4CAF50)),
@@ -195,9 +199,9 @@ class _CartScreenState extends State<CartScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Confirm Order',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: Text(
+                  loc.t('confirm_order'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ),
@@ -219,14 +223,15 @@ class _CartScreenState extends State<CartScreen> {
       );
 
       if (!mounted) return;
+      final loc = AppLocalizations.of(context);
       Navigator.pop(sheetCtx);
 
       if (response.statusCode == 200) {
         setState(() => _cartItems.clear());
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order placed! 🎉'),
-            backgroundColor: Color(0xFF4CAF50),
+          SnackBar(
+            content: Text(loc.t('order_placed')),
+            backgroundColor: const Color(0xFF4CAF50),
           ),
         );
         widget.onOrderPlaced?.call();
@@ -252,7 +257,8 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.userId == null) {
+    final loc = AppLocalizations.of(context);
+    if (_effectiveUserId == null) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -261,14 +267,14 @@ class _CartScreenState extends State<CartScreen> {
             children: [
               const Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.blue),
               const SizedBox(height: 20),
-              const Text('Your cart is waiting!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(loc.t('your_cart_waiting'),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              const Text('Login to add items and manage your orders',
-                  style: TextStyle(color: Colors.grey)),
+              Text(loc.t('login_add_items'),
+                  style: const TextStyle(color: Colors.grey)),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => Navigator.push(context,
+                onPressed: () => Navigator.pushReplacement(context,
                     MaterialPageRoute(builder: (_) => const LoginScreen())),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -276,8 +282,8 @@ class _CartScreenState extends State<CartScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Login / Sign Up',
-                    style: TextStyle(color: Colors.white)),
+                child: Text(loc.t('login_sign_up'),
+                    style: const TextStyle(color: Colors.white)),
               ),
             ],
           ),
@@ -290,8 +296,8 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('Cart',
-                style: TextStyle(
+            Text(loc.t('cart'),
+                style: const TextStyle(
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                     fontSize: 24)),
@@ -371,12 +377,33 @@ class _CartScreenState extends State<CartScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${item['productPrice']} JD',
-                  style: const TextStyle(
-                      color: Color(0xFF4CAF50),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15),
+                Row(
+                  children: [
+                    Text(
+                      '${item['productPrice']} JD',
+                      style: const TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15),
+                    ),
+                    if (item['size'] != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDDE3FE),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Size: ${item['size']}',
+                          style: const TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -429,16 +456,17 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildEmptyState() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 20),
-          const Text('Your cart is empty',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(loc.t('your_cart_empty'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
-          Text('Add items from the home screen',
+          Text(loc.t('add_items_home'),
               style: TextStyle(color: Colors.grey[600])),
         ],
       ),
@@ -446,6 +474,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildBottomBar() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
       height: 90,
@@ -457,7 +486,7 @@ class _CartScreenState extends State<CartScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Total', style: TextStyle(color: Colors.grey)),
+              Text(loc.t('total'), style: const TextStyle(color: Colors.grey)),
               Text(
                 '${_total.toStringAsFixed(2)} JD',
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -474,7 +503,7 @@ class _CartScreenState extends State<CartScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15)),
             ),
-            child: const Text('Checkout'),
+            child: Text(loc.t('checkout')),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _currency = 'JOD';
   String _userName = '';
   String _userEmail = '';
+  String _selectedLanguage = 'English';
 
   @override
   void initState() {
@@ -35,6 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _country = prefs.getString('country') ?? 'Jordan';
         _currency = prefs.getString('currency') ?? 'JOD';
+        _selectedLanguage =
+            prefs.getString('locale') == 'ar' ? 'العربية' : 'English';
       });
     }
     await _loadAddress();
@@ -66,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showAddressSheet() {
+    final loc = AppLocalizations.of(context);
     final fullAddressCtrl = TextEditingController(text: _fullAddress);
     final cityCtrl = TextEditingController(text: _city);
 
@@ -86,16 +92,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Shipping Address',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              loc.t('enter_shipping_address'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: fullAddressCtrl,
               decoration: InputDecoration(
-                labelText: 'Full Address',
-                hintText: 'Street, building, apartment...',
+                labelText: loc.t('full_address'),
+                hintText: loc.t('address_hint'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               maxLines: 2,
@@ -104,7 +110,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextField(
               controller: cityCtrl,
               decoration: InputDecoration(
-                labelText: 'City',
+                labelText: loc.t('city'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -124,9 +130,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Save',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: Text(
+                  loc.t('save'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ),
@@ -159,16 +165,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _fullAddress = fullAddress;
           _city = city;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Address saved!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          final loc = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.t('address_saved')),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save address'), backgroundColor: Colors.red),
-        );
+        if (mounted) {
+          final loc = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.t('failed_address')), backgroundColor: Colors.red),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Save address error: $e');
@@ -176,6 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showProfileSheet() {
+    final loc = AppLocalizations.of(context);
     final nameCtrl = TextEditingController(text: _userName);
     final emailCtrl = TextEditingController(text: _userEmail);
 
@@ -196,15 +209,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Edit Profile',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              loc.t('edit_profile'),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Full Name',
+                labelText: loc.t('full_name'),
                 prefixIcon: const Icon(Icons.person_outline),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -214,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Email',
+                labelText: loc.t('email'),
                 prefixIcon: const Icon(Icons.email_outlined),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -229,9 +242,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Save',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: Text(
+                  loc.t('save'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ),
@@ -266,13 +279,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _userName = name;
           _userEmail = email;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated!'), backgroundColor: Colors.green),
-        );
+        if (mounted) {
+          final loc = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.t('profile_updated')), backgroundColor: Colors.green),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile'), backgroundColor: Colors.red),
-        );
+        if (mounted) {
+          final loc = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.t('failed_update')), backgroundColor: Colors.red),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Save profile error: $e');
@@ -280,6 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showCountrySheet() {
+    final loc = AppLocalizations.of(context);
     const countries = [
       'Jordan', 'Saudi Arabia', 'UAE', 'Kuwait', 'Qatar',
       'Bahrain', 'Oman', 'Egypt', 'Lebanon', 'Iraq',
@@ -300,7 +320,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 12),
-          const Text('Select Country', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(loc.t('select_country'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Flexible(
             child: ListView.builder(
@@ -329,6 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _showCurrencySheet() {
+    final loc = AppLocalizations.of(context);
     const currencies = ['JOD', 'USD', 'EUR', 'SAR', 'AED', 'KWD', 'QAR', 'BHD', 'OMR', 'EGP', 'TRY', 'GBP'];
 
     showModalBottomSheet(
@@ -345,7 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
           ),
           const SizedBox(height: 12),
-          const Text('Select Currency', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(loc.t('select_currency'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Flexible(
             child: ListView.builder(
@@ -373,15 +394,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showLanguageSheet() {
+    final loc = AppLocalizations.of(context);
+    final languages = [
+      {'code': 'en', 'name': loc.t('english')},
+      {'code': 'ar', 'name': loc.t('arabic')},
+    ];
+    final currentCode = Localizations.localeOf(context).languageCode;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 16),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 12),
+          Text(loc.t('select_language'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: languages.length,
+              itemBuilder: (context, index) => ListTile(
+                title: Text(languages[index]['name']!),
+                trailing: languages[index]['code'] == currentCode
+                    ? const Icon(Icons.check, color: Colors.blueAccent)
+                    : null,
+                onTap: () async {
+                  final provider = WarradApp.providerOf(this.context);
+                  await provider?.setLocale(languages[index]['code']!);
+                  if (mounted) {
+                    setState(() {
+                      _selectedLanguage = languages[index]['name']!;
+                    });
+                    Navigator.pop(ctx);
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final bool isLoggedIn = widget.userId != null;
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text(
-          "Settings",
-          style: TextStyle(
+        title: Text(
+          loc.t('settings'),
+          style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -397,54 +471,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (isLoggedIn) ...[
-              _buildSectionTitle("Personal"),
+              _buildSectionTitle(loc.t('personal')),
               _buildSettingsGroup([
-                _buildSettingsTile(Icons.person_outline, "Profile", _showProfileSheet,
+                _buildSettingsTile(Icons.person_outline, loc.t('profile'), _showProfileSheet,
                     trailingText: _userName.isNotEmpty ? _userName : null),
                 _buildSettingsTile(
                   Icons.location_on_outlined,
-                  "Shipping Address",
+                  loc.t('shipping_address'),
                   _showAddressSheet,
                   trailingText: _city.isNotEmpty ? _city : null,
                 ),
                 _buildSettingsTile(
                   Icons.payment_outlined,
-                  "Payment methods",
+                  loc.t('payment_methods'),
                   () {},
                 ),
               ]),
               const SizedBox(height: 25),
             ],
-            _buildSectionTitle("Shop"),
+            _buildSectionTitle(loc.t('shop')),
             _buildSettingsGroup([
-              _buildSettingsTile(Icons.public, "Country", _showCountrySheet,
+              _buildSettingsTile(Icons.public, loc.t('country'), _showCountrySheet,
                   trailingText: _country),
               _buildSettingsTile(
                 Icons.monetization_on_outlined,
-                "Currency",
+                loc.t('currency'),
                 _showCurrencySheet,
                 trailingText: _currency,
               ),
             ]),
             const SizedBox(height: 25),
-            _buildSectionTitle("Account"),
+            _buildSectionTitle(loc.t('account')),
             _buildSettingsGroup([
               _buildSettingsTile(
                 Icons.language,
-                "Language",
-                () {},
-                trailingText: "English",
+                loc.t('language'),
+                _showLanguageSheet,
+                trailingText: _selectedLanguage,
               ),
-              _buildSettingsTile(Icons.info_outline, "About Warrad", () {}),
+              _buildSettingsTile(Icons.info_outline, loc.t('about_warrad'), () {}),
             ]),
             const SizedBox(height: 30),
             if (isLoggedIn)
               Center(
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
-                    "Delete My Account",
-                    style: TextStyle(color: Colors.redAccent, fontSize: 16),
+                  child: Text(
+                    loc.t('delete_account'),
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 16),
                   ),
                 ),
               ),
@@ -457,14 +531,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     minimumSize: Size.zero,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   ),
-                  child: const Text(
-                    "Login to Manage Profile",
-                    style: TextStyle(color: Colors.white),
+                  child: Text(
+                    loc.t('login_manage'),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ),
               ),
             const SizedBox(height: 20),
-            _buildAppVersionInfo(),
+            _buildAppVersionInfo(context),
           ],
         ),
       ),
@@ -472,20 +546,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-Widget _buildAppVersionInfo() {
+Widget _buildAppVersionInfo(BuildContext context) {
+  final loc = AppLocalizations.of(context);
   return Center(
     child: Column(
       children: [
-        const Text(
-          "Warrad Fashion",
-          style: TextStyle(
+        Text(
+          loc.t('app_title'),
+          style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
         ),
         Text(
-          "Version 1.0 May, 2026",
+          loc.t('version_info'),
           style: TextStyle(color: Colors.grey[500], fontSize: 13),
         ),
       ],

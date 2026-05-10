@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/cart/CartScreen.dart';
 import 'package:my_sweing_app/features/shop/screens/OrdersScreen.dart';
 import 'package:my_sweing_app/features/shop/screens/home_screen.dart';
@@ -57,15 +58,15 @@ class _MainWrapperState extends State<MainWrapper> {
 
       currentUserId != null
           ? WishlistPage(key: ValueKey(_wishlistKey), userId: currentUserId!)
-          : const Center(
+          : Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.favorite_border, size: 60, color: Colors.grey),
-                  SizedBox(height: 16),
+                  const Icon(Icons.favorite_border, size: 60, color: Colors.grey),
+                  const SizedBox(height: 16),
                   Text(
-                    "Please login to view your wishlist",
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                    AppLocalizations.of(context).t('please_login_orders'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 16),
                   ),
                 ],
               ),
@@ -83,6 +84,7 @@ class _MainWrapperState extends State<MainWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     if (_isInitializing) {
       return const Scaffold(
         body: Center(
@@ -110,31 +112,31 @@ class _MainWrapperState extends State<MainWrapper> {
         showSelectedLabels: false,
         showUnselectedLabels: false,
         elevation: 10,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: loc.t('home_label'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Wishlist',
+            icon: const Icon(Icons.favorite_border),
+            activeIcon: const Icon(Icons.favorite),
+            label: loc.t('my_wishlist'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Orders',
+            icon: const Icon(Icons.assignment_outlined),
+            activeIcon: const Icon(Icons.assignment),
+            label: loc.t('my_orders'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag_outlined),
-            activeIcon: Icon(Icons.shopping_bag),
-            label: 'Cart',
+            icon: const Icon(Icons.shopping_bag_outlined),
+            activeIcon: const Icon(Icons.shopping_bag),
+            label: loc.t('cart'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: loc.t('profile'),
           ),
         ],
       ),

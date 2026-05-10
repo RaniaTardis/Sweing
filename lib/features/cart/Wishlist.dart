@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/features/shop/screens/product_details.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 
 class WishlistPage extends StatefulWidget {
-   final int? userId; // ✅ Add this parameter
+   final int? userId;
   const WishlistPage({super.key, this.userId});
 
   @override
@@ -77,6 +78,7 @@ class _WishlistPageState extends State<WishlistPage> {
 }
 
 Future<void> _toggleWishlist(int productId) async {
+  final loc = AppLocalizations.of(context);
   try {
     final item = wishlistItems.firstWhere((i) => i['productId'] == productId);
     final wishlistId = item['wishlistId'];
@@ -94,8 +96,8 @@ Future<void> _toggleWishlist(int productId) async {
         wishlistItems.removeWhere((item) => item['productId'] == productId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Removed from wishlist'),
+         SnackBar(
+          content: Text(loc.t('removed_wishlist')),
           backgroundColor: Colors.grey,
         ),
       );
@@ -106,6 +108,7 @@ Future<void> _toggleWishlist(int productId) async {
 }
 
   Future<void> _addToCart(int productId) async {
+    final loc = AppLocalizations.of(context);
     try {
       final prefs = await SharedPreferences.getInstance();
       final int? userId = widget.userId ?? prefs.getInt('userId');
@@ -134,8 +137,8 @@ Future<void> _toggleWishlist(int productId) async {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(isAlready
-              ? '${item['productName']} is already in cart'
-              : '${item['productName']} added to cart! 🛒'),
+              ? '${item['productName']} ${loc.t('already_in_cart')}'
+              : '${item['productName']} ${loc.t('added_to_cart')}'),
           backgroundColor:
               isAlready ? Colors.orange : const Color(0xFF4CAF50),
         ),
@@ -147,6 +150,7 @@ Future<void> _toggleWishlist(int productId) async {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -169,9 +173,9 @@ Future<void> _toggleWishlist(int productId) async {
               ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'My Wishlist',
-              style: TextStyle(
+            Text(
+              loc.t('my_wishlist'),
+              style: const TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.w800,
                 fontSize: 24,
@@ -206,6 +210,7 @@ Future<void> _toggleWishlist(int productId) async {
   }
 
   Widget _buildWishlistItem(Map<String, dynamic> item) {
+    final loc = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -254,7 +259,6 @@ Future<void> _toggleWishlist(int productId) async {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Remove from wishlist
             GestureDetector(
               onTap: () => _toggleWishlist(item['productId']),
               child: Container(
@@ -271,7 +275,6 @@ Future<void> _toggleWishlist(int productId) async {
               ),
             ),
             const SizedBox(height: 8),
-            // Add to cart
             SizedBox(
               width: 100,
               child: ElevatedButton(
@@ -283,9 +286,9 @@ Future<void> _toggleWishlist(int productId) async {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: const Text(
-                  'Add',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                child: Text(
+                  loc.t('add'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -301,7 +304,7 @@ Future<void> _toggleWishlist(int productId) async {
                   'name': item['productName'],
                   'price': item['productPrice'],
                   'image': item['productImage'],
-                  'category': 'Buy', // Default category
+                  'category': 'Buy',
                 },
               ),
             ),
@@ -312,6 +315,7 @@ Future<void> _toggleWishlist(int productId) async {
   }
 
   Widget _buildEmptyState() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
@@ -325,7 +329,7 @@ Future<void> _toggleWishlist(int productId) async {
             ),
             const SizedBox(height: 24),
             Text(
-              'Your Wishlist is Empty',
+              loc.t('wishlist_empty'),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -334,7 +338,7 @@ Future<void> _toggleWishlist(int productId) async {
             ),
             const SizedBox(height: 12),
             Text(
-              'Add your favorite dresses here to save them for later!',
+              loc.t('wishlist_empty_sub'),
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey[600],
@@ -343,11 +347,13 @@ Future<void> _toggleWishlist(int productId) async {
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (Navigator.canPop(context)) Navigator.pop(context);
+              },
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              label: const Text(
-                'Continue Shopping',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              label: Text(
+                loc.t('continue_shopping'),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),

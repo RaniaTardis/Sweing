@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 import 'package:my_sweing_app/features/auth/screens/signup_screen.dart';
 import 'package:my_sweing_app/features/shop/screens/CategoryProductsScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:my_sweing_app/features/cart/Wishlist.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:my_sweing_app/features/shop/screens/product_details.dart';
 
@@ -156,34 +156,27 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ];
     _checkAuthStatus();
-    // _initializeGuestSession();
   }
 
   Future<void> _checkAuthStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // 1. جلب البيانات المخزنة
       _userToken = prefs.getString('userToken');
       _guestSessionId = prefs.getString('guestSessionId');
-      // جلب الـ userId المخزن أو استخدام قيمة افتراضية لتجنب null pointer
       int? savedUserId = prefs.getInt('userId');
 
-      // 2. تحديث الحالة الأساسية (هل هو ضيف أم مستخدم مسجل؟)
       setState(() {
         _isGuest = (_userToken == null);
-        // تأكدي أن قائمة المفضلات مهيئة بحجم قائمة الفساتين لتجنب Range Error
         _isFavorited = List.filled(dresses.length, false);
       });
 
-      // 3. تحميل المفضلات فقط بعد التأكد من الهوية وقبل إيقاف الـ Loading
       if (_userToken != null || _guestSessionId != null) {
         await _loadFavorites();
       }
     } catch (e) {
       print('Error in _checkAuthStatus: $e');
     } finally {
-      // 4. إيقاف شاشة التحميل في النهاية سواء نجحت العملية أو فشلت
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -202,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final loc = AppLocalizations.of(context);
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
@@ -223,9 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          const Text(
-            'Sewing Elegance',
-            style: TextStyle(
+          Text(
+            loc.t('sewing_elegance'),
+            style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.w800,
               fontSize: 24,
@@ -279,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   controller: _searchCtrl,
                   onChanged: (v) => setState(() => _searchQuery = v),
                   decoration: InputDecoration(
-                    hintText: 'Search dresses & gowns...',
+                    hintText: loc.t('search_hint'),
                     hintStyle: TextStyle(color: Colors.grey[500], fontSize: 16),
                     border: InputBorder.none,
                     suffixIcon: _searchQuery.isNotEmpty
@@ -302,6 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAccountOptions() {
+    final loc = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -325,22 +320,37 @@ class _HomeScreenState extends State<HomeScreen> {
             if (_isGuest) ...[
               _buildAccountOption(
                 Icons.login,
-                'Login',
-                'Access your account',
+                loc.t('login'),
+                loc.t('access_account'),
                 Colors.blue,
+                action: () {
+                  Navigator.push(
+                    this.context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
               ),
               _buildAccountOption(
                 Icons.person_add,
-                'Create Account',
-                'Required for orders',
+                loc.t('create_account'),
+                loc.t('create_account_subtitle'),
                 Colors.green,
+                action: () {
+                  Navigator.push(
+                    this.context,
+                    MaterialPageRoute(builder: (context) => const SignupScreen()),
+                  );
+                },
               ),
             ] else ...[
               _buildAccountOption(
                 Icons.logout,
-                'Logout',
-                'Sign out of account',
+                loc.t('logout'),
+                loc.t('logout_subtitle'),
                 Colors.red,
+                action: () {
+                  _logout();
+                },
               ),
             ],
           ],
@@ -353,8 +363,9 @@ class _HomeScreenState extends State<HomeScreen> {
     IconData icon,
     String title,
     String subtitle,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? action,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -382,32 +393,15 @@ class _HomeScreenState extends State<HomeScreen> {
           color: Colors.grey,
         ),
         onTap: () {
-          // 1. إغلاق القائمة المنبثقة أولاً
           Navigator.pop(context);
-
-          // 2. التحقق من الزر المضغوط وتوجيه المستخدم
-          if (title == 'Login') {
-            // استبدلي 'LoginScreen' باسم كلاس صفحة تسجيل الدخول عندكِ
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          } else if (title == 'Create Account') {
-            // استبدلي 'SignUpScreen' باسم كلاس صفحة إنشاء الحساب عندكِ
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SignupScreen()),
-            );
-          } else if (title == 'Logout') {
-            _logout(); // استدعاء دالة تسجيل الخروج الموجودة مسبقاً
-          }
+          action?.call();
         },
       ),
     );
   }
 
-  // ✅ Update _logout():
   Future<void> _logout() async {
+    final loc = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('userToken');
     await prefs.remove('guestSessionId');
@@ -417,11 +411,10 @@ class _HomeScreenState extends State<HomeScreen> {
       _guestSessionId = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logged out successfully! 👋')),
+      SnackBar(content: Text(loc.t('logged_out'))),
     );
   }
 
-  // ✅ In initState(), load favorites:
   Future<void> _loadFavorites() async {
     try {
       final headers = {
@@ -456,8 +449,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ Add Login function (call from account options):
   Future<void> _login(String email, String password) async {
+    final loc = AppLocalizations.of(context);
     try {
       final response = await http.post(
         Uri.parse('http://localhost:3000/auth/login'),
@@ -477,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Welcome back! 👋')));
+        ).showSnackBar(SnackBar(content: Text(loc.t('welcome_back'))));
       }
     } catch (e) {
       print('Login error: $e');
@@ -485,6 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActualContent() {
+    final loc = AppLocalizations.of(context);
     return RefreshIndicator(
       onRefresh: () async {
         setState(() => _isLoading = true);
@@ -506,9 +500,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Shop by Category',
-                        style: TextStyle(
+                      Text(
+                        loc.t('shop_by_category'),
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: Colors.black87,
@@ -517,7 +511,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       TextButton(
                         onPressed: () {},
                         child: Text(
-                          'See All',
+                          loc.t('see_all'),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.w600,
@@ -535,9 +529,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Most Popular',
-                        style: TextStyle(
+                      Text(
+                        loc.t('most_popular'),
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: Colors.black87,
@@ -546,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       TextButton(
                         onPressed: () {},
                         child: Text(
-                          'View All',
+                          loc.t('view_all'),
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontWeight: FontWeight.w600,
@@ -575,6 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHeroBanner() {
+    final loc = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       height: 220,
@@ -615,9 +610,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '✨ 50% OFF First Order!',
-                    style: TextStyle(
+                  Text(
+                    '✨ ${loc.t('hero_title')}',
+                    style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -625,9 +620,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Discover your perfect dress today',
-                    style: TextStyle(
+                  Text(
+                    loc.t('hero_subtitle'),
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white70,
                       fontWeight: FontWeight.w500,
@@ -635,7 +630,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              // ✅ FIXED: Safe ElevatedButton
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -653,9 +647,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     minimumSize: const Size(double.infinity, 48),
                   ),
                   onPressed: () {},
-                  child: const Text(
-                    'Shop Now',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  child: Text(
+                    loc.t('shop_now'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -694,15 +688,29 @@ class _HomeScreenState extends State<HomeScreen> {
     Color color,
     String imagePath,
   ) {
+    final loc = AppLocalizations.of(context);
+    String localizedTitle;
+    switch (title) {
+      case 'Buy Dresses':
+        localizedTitle = loc.t('buy_dresses');
+        break;
+      case 'Rent Dresses':
+        localizedTitle = loc.t('rent_dresses');
+        break;
+      case 'Custom Made':
+        localizedTitle = loc.t('custom_made');
+        break;
+      default:
+        localizedTitle = title;
+    }
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => CategoryProductsScreen(
-              categoryName: title, // مثلاً 'Buy Dresses'
-              allProducts:
-                  dresses, // قائمة الـ dresses المعرفة في الـ state[cite: 1]
+              categoryName: title,
+              allProducts: dresses,
             ),
           ),
         );
@@ -752,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Flexible(
               child: Text(
-                title,
+                localizedTitle,
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -762,15 +770,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            // const SizedBox(height: 4),
-            // Text(
-            //   '${12}+ Styles',
-            //   style: TextStyle(
-            //     fontSize: 10,
-            //     color: color,
-            //     fontWeight: FontWeight.w600,
-            //   ),
-            // ),
           ],
         ),
       ),
@@ -791,6 +790,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _toggleWishlist(int productId) async {
+    final loc = AppLocalizations.of(context);
     try {
       final dress = dresses.firstWhere((d) => d['id'] == productId);
 
@@ -804,8 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
         },
         body: json.encode({
-          // ✅ Guest needs userId or session handles it
-          'userId': _isGuest ? null : widget.userId ?? 1, // Use your userId
+          'userId': _isGuest ? null : widget.userId ?? 1,
           'productId': productId,
           'productName': dress['name'],
           'productPrice': dress['price'],
@@ -816,7 +815,6 @@ class _HomeScreenState extends State<HomeScreen> {
       print('❤️ Wishlist Response: ${response.statusCode} - ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // ✅ Toggle locally (works for both add/remove)
         setState(() {
           _isFavorited[productId - 1] = !_isFavorited[productId - 1];
         });
@@ -825,8 +823,8 @@ class _HomeScreenState extends State<HomeScreen> {
           SnackBar(
             content: Text(
               _isFavorited[productId - 1]
-                  ? '${dress['name']} added to wishlist! ♥'
-                  : '${dress['name']} removed from wishlist',
+                  ? '${dress['name']} ${loc.t('added_to_wishlist')}'
+                  : '${dress['name']} ${loc.t('removed_from_wishlist')}',
             ),
             backgroundColor: _isFavorited[productId - 1]
                 ? Colors.pink
@@ -840,8 +838,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       print('❌ Wishlist error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Network error. Try again!'),
+        SnackBar(
+          content: Text(loc.t('network_error')),
           backgroundColor: Colors.red,
         ),
       );
@@ -849,13 +847,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _addToCart(int productId) async {
+    final loc = AppLocalizations.of(context);
     final prefs = await SharedPreferences.getInstance();
     final int? userId = widget.userId ?? prefs.getInt('userId');
     final String? token = prefs.getString('userToken');
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login to add to cart')),
+        SnackBar(content: Text(loc.t('please_login_cart'))),
       );
       return;
     }
@@ -891,8 +890,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(width: 8),
               Text(isAlready
-                  ? '${dress['name']} is already in cart'
-                  : '${dress['name']} added to cart! 🛒'),
+                  ? '${dress['name']} ${loc.t('already_in_cart')}'
+                  : '${dress['name']} ${loc.t('added_to_cart')}'),
             ],
           ),
           backgroundColor:
@@ -902,12 +901,13 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       print('Cart error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cart error. Please try again.')),
+        SnackBar(content: Text(loc.t('cart_error'))),
       );
     }
   }
 
   Widget _buildProductGrid() {
+    final loc = AppLocalizations.of(context);
     final filtered = _filteredDresses;
     if (filtered.isEmpty) {
       return Padding(
@@ -917,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
               const SizedBox(height: 12),
-              Text('No results for "$_searchQuery"',
+              Text('${loc.t('no_results')} "$_searchQuery"',
                   style: TextStyle(color: Colors.grey[500], fontSize: 16)),
             ],
           ),
@@ -973,7 +973,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: 180,
-                          // تم حذف loadingBuilder لأنها لا تعمل مع الـ assets
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
                                 height: 180,
@@ -988,7 +987,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Image not found',
+                                      loc.t('image_not_found'),
                                       style: TextStyle(
                                         color: Colors.grey[600],
                                         fontSize: 12,
@@ -1023,13 +1022,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      // ✅ Inside _buildProductGrid() - Replace Favorite Positioned widget:
                       Positioned(
                         top: 12,
                         right: 12,
                         child: GestureDetector(
                           onTap: () =>
-                              _toggleWishlist(dress['id']), // ✅ Toggle wishlist
+                              _toggleWishlist(dress['id']),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 250),
                             width: 40,
@@ -1045,8 +1043,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                             child: Icon(
-                              _isFavorited[dress['id'] -
-                                      1] // ✅ Use dress ID for index
+                              _isFavorited[dress['id'] - 1]
                                   ? Icons.favorite
                                   : Icons.favorite_border,
                               color: _isFavorited[dress['id'] - 1]
@@ -1057,12 +1054,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      // ✅ Inside _buildProductGrid() - Replace Cart Positioned widget:
                       Positioned(
                         bottom: -8,
                         right: 12,
                         child: GestureDetector(
-                          onTap: () => _addToCart(dress['id']), // ✅ Add to cart
+                          onTap: () => _addToCart(dress['id']),
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: const BoxDecoration(

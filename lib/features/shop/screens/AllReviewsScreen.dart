@@ -1,130 +1,179 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // ✅ For checking login status
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 
 class AllReviewsScreen extends StatefulWidget {
-  const AllReviewsScreen({super.key});
+  final int? productId;
+  const AllReviewsScreen({super.key, this.productId});
 
   @override
   State<AllReviewsScreen> createState() => _AllReviewsScreenState();
 }
 
 class _AllReviewsScreenState extends State<AllReviewsScreen> {
-  bool _isLoggedIn = false; // ✅ Track login status
+  bool _isLoading = true;
+  int? _userId;
+  String? _userToken;
+  List<Map<String, dynamic>> _reviews = [];
+
+  final Map<String, dynamic> _mockReview = {
+    'userName': 'Ronald Richards',
+    'createdAt': '2020-09-13T00:00:00',
+    'rating': 5,
+    'comment': 'Absolutely stunning dress! Perfect fit and quality. Highly recommend!',
+    'isMock': true,
+  };
 
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _init();
   }
 
-  // ✅ Check if user is logged in (has guestSessionId or user token)
-  Future<void> _checkLoginStatus() async {
+  Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
-    final guestSessionId = prefs.getString('guestSessionId');
-    setState(() {
-      _isLoggedIn = guestSessionId != null;
-    });
+    _userToken = prefs.getString('userToken');
+    _userId = prefs.getInt('userId');
+    await _loadReviews();
   }
+
+  Future<void> _loadReviews() async {
+    setState(() => _isLoading = true);
+    try {
+      if (widget.productId == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/reviews?productId=${widget.productId}'),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _reviews = List<Map<String, dynamic>>.from(data);
+        });
+      }
+    } catch (e) {
+      debugPrint('Load reviews error: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _submitReview(int rating, String comment) async {
+    final loc = AppLocalizations.of(context);
+    if (_userId == null || _userToken == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/reviews'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_userToken',
+        },
+        body: json.encode({
+          'userId': _userId,
+          'productId': widget.productId,
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+
+      if (!mounted) return;
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'already_reviewed') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.t('already_reviewed')),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(loc.t('review_submitted')),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadReviews();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.t('failed_review'))),
+      );
+    }
+  }
+
+  double get _averageRating {
+    if (_reviews.isEmpty) return 4.8;
+    final total = _reviews.fold<num>(0, (sum, r) => sum + (r['rating'] as num));
+    return total / _reviews.length;
+  }
+
+  int get _totalCount => _reviews.length + 1;
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: const BackButton(color: Colors.black),
-        title: const Text(
-          "Reviews",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          loc.t('reviews_title'),
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          _buildReviewSummary(),
-          const Divider(thickness: 1, height: 30),
-
-          // ✅ Show login message if not logged in
-          if (!_isLoggedIn)
-            Container(
-              padding: const EdgeInsets.all(20),
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: Colors.orange[200]!),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.lock_outline, size: 48, color: Colors.orange),
-                  const SizedBox(height: 12),
-                  const Text(
-                    "Login Required",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildReviewSummary(loc),
+                const Divider(thickness: 1, height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                    itemCount: _reviews.length + 1,
+                    separatorBuilder: (_, __) => const Divider(height: 32),
+                    itemBuilder: (context, index) {
+                      if (index == 0) return _buildReviewItem(_mockReview);
+                      return _buildReviewItem(_reviews[index - 1]);
+                    },
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Please login or create an account to write reviews",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.orange),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context), // Go back to login
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                    child: const Text("Login / Signup"),
-                  ),
-                ],
-              ),
-            )
-          else
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: 5,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 20),
-                itemBuilder: (context, index) => _buildReviewItem(),
-              ),
+                ),
+              ],
             ),
-        ],
-      ),
-
-      // ✅ Only show FAB if logged in
-      floatingActionButton: _isLoggedIn
+      floatingActionButton: _userId != null
           ? FloatingActionButton.extended(
               onPressed: () => _showAddReviewSheet(context),
               backgroundColor: const Color(0xFFDDE3FE),
               foregroundColor: Colors.black,
               icon: const Icon(Icons.edit_note),
-              label: const Text("Add Review"),
+              label: Text(loc.t('add_review')),
             )
           : null,
     );
   }
 
-  Widget _buildReviewSummary() {
+  Widget _buildReviewSummary(AppLocalizations loc) {
+    final avg = _averageRating;
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "4.8",
-                style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+              Text(
+                avg.toStringAsFixed(1),
+                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
               ),
               Row(
                 children: List.generate(
@@ -132,12 +181,12 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                   (i) => Icon(
                     Icons.star,
                     size: 18,
-                    color: i < 4 ? Colors.orange : Colors.grey[300],
+                    color: i < avg.round() ? Colors.orange : Colors.grey[300],
                   ),
                 ),
               ),
               const SizedBox(height: 5),
-              const Text("124 Reviews", style: TextStyle(color: Colors.grey)),
+              Text('$_totalCount ${loc.t('reviews_title')}', style: const TextStyle(color: Colors.grey)),
             ],
           ),
           const Spacer(),
@@ -146,29 +195,41 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
     );
   }
 
-  Widget _buildReviewItem() {
+  Widget _buildReviewItem(Map<String, dynamic> review) {
+    final rating = (review['rating'] as num).toInt();
+    final name = review['userName'] ?? 'Anonymous';
+    final comment = review['comment'] ?? '';
+    final dateRaw = review['createdAt'];
+    String dateStr = '';
+    if (dateRaw != null) {
+      final dt = DateTime.tryParse(dateRaw.toString());
+      if (dt != null) {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        dateStr = '${dt.day} ${months[dt.month - 1]}, ${dt.year}';
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage("https://via.placeholder.com/150"),
+              backgroundColor: Colors.grey[200],
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Ronald Richards",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  Text(
-                    "13 Sep, 2020",
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                  ),
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (dateStr.isNotEmpty)
+                    Text(dateStr, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 ],
               ),
             ),
@@ -178,24 +239,22 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                 (i) => Icon(
                   Icons.star,
                   size: 14,
-                  color: i < 4 ? Colors.orange : Colors.grey[300],
+                  color: i < rating ? Colors.orange : Colors.grey[300],
                 ),
               ),
             ),
           ],
         ),
         const SizedBox(height: 10),
-        const Text(
-          "The material is very high quality and the fit is perfect for daily use. I really recommend this product to everyone looking for comfort.",
-          style: TextStyle(color: Colors.black87, height: 1.4),
-        ),
+        Text(comment, style: const TextStyle(color: Colors.black87, height: 1.4)),
       ],
     );
   }
 
   void _showAddReviewSheet(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     int userRating = 0;
-    final TextEditingController reviewController = TextEditingController();
+    final reviewController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -203,10 +262,10 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
             left: 20,
             right: 20,
             top: 20,
@@ -214,18 +273,16 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                "Write a Review",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                loc.t('write_review'),
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (index) {
                   return IconButton(
-                    onPressed: () =>
-                        setModalState(() => userRating = index + 1),
+                    onPressed: () => setModalState(() => userRating = index + 1),
                     icon: Icon(
                       index < userRating ? Icons.star : Icons.star_border,
                       color: Colors.orange,
@@ -239,7 +296,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                 controller: reviewController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  hintText: "Share your experience...",
+                  hintText: loc.t('share_experience'),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -253,37 +310,25 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (userRating > 0 &&
-                        reviewController.text.trim().isNotEmpty) {
-                      // ✅ Submit review logic here
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Review submitted successfully! 🎉"),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                      Navigator.pop(context);
-                      reviewController.clear();
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            "Please select rating and write a review",
-                          ),
+                  onPressed: () async {
+                    if (userRating == 0 || reviewController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(loc.t('select_rating_review')),
                           backgroundColor: Colors.red,
                         ),
                       );
+                      return;
                     }
+                    Navigator.pop(ctx);
+                    await _submitReview(userRating, reviewController.text.trim());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFDDE3FE),
                     foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   ),
-                  child: const Text("Submit Review"),
+                  child: Text(loc.t('submit_review')),
                 ),
               ),
               const SizedBox(height: 20),

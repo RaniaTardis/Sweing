@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int? userId;
@@ -16,6 +17,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<Map<String, dynamic>> _pendingOrders = [];
   List<Map<String, dynamic>> _deliveredOrders = [];
   String? _userToken;
+  int? _effectiveUserId;
 
   @override
   void initState() {
@@ -27,7 +29,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
     setState(() => _isLoading = true);
     final prefs = await SharedPreferences.getInstance();
     _userToken = prefs.getString('userToken');
-    final int? userId = widget.userId ?? prefs.getInt('userId');
+    _effectiveUserId = widget.userId ?? prefs.getInt('userId');
+    final int? userId = _effectiveUserId;
     if (userId == null || _userToken == null) {
       setState(() => _isLoading = false);
       return;
@@ -62,9 +65,72 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  Future<void> _reorder(int orderId) async {
+    if (_effectiveUserId == null || _userToken == null) return;
+
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_userToken',
+    };
+
+    try {
+      // Fetch the original order items
+      final itemsRes = await http.get(
+        Uri.parse('http://localhost:3000/orders/$orderId/items'),
+        headers: {'Authorization': 'Bearer $_userToken'},
+      );
+
+      if (itemsRes.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load order items')),
+        );
+        return;
+      }
+
+      final items = List<Map<String, dynamic>>.from(json.decode(itemsRes.body));
+      if (items.isEmpty) return;
+
+      int added = 0;
+      for (final item in items) {
+        final res = await http.post(
+          Uri.parse('http://localhost:3000/cart/add'),
+          headers: headers,
+          body: json.encode({
+            'userId': _effectiveUserId,
+            'productId': item['productId'],
+            'productName': item['productName'],
+            'productPrice': item['productPrice'],
+            'productImage': item['productImage'],
+            'size': item['size'],
+          }),
+        );
+        final data = json.decode(res.body);
+        if (data['status'] == 'added' || data['status'] == 'size_updated') added++;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(added > 0
+              ? '$added item${added == 1 ? '' : 's'} added to cart'
+              : 'Items are already in your cart'),
+          backgroundColor: added > 0 ? const Color(0xFF4CAF50) : Colors.orange,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Reorder error: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reorder failed. Please try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.userId == null) {
+    final loc = AppLocalizations.of(context);
+    if (_effectiveUserId == null && !_isLoading) {
       return Scaffold(
         backgroundColor: Colors.white,
         body: Center(
@@ -73,9 +139,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
             children: [
               const Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey),
               const SizedBox(height: 20),
-              const Text(
-                "Login to see your orders",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                loc.t('login_see_orders'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               ElevatedButton(
@@ -84,7 +150,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   minimumSize: Size.zero,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 ),
-                child: const Text("Go to Login"),
+                child: Text(loc.t('go_to_login')),
               ),
             ],
           ),
@@ -97,9 +163,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F9FA),
         appBar: AppBar(
-          title: const Text(
-            "My Orders",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          title: Text(
+            loc.t('my_orders'),
+            style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           ),
           backgroundColor: Colors.white,
           elevation: 0,
@@ -109,13 +175,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
               icon: const Icon(Icons.refresh, color: Colors.grey),
             ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             labelColor: Colors.blueAccent,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Colors.blueAccent,
             tabs: [
-              Tab(text: "Ongoing"),
-              Tab(text: "Completed"),
+              Tab(text: loc.t('ongoing')),
+              Tab(text: loc.t('completed')),
             ],
           ),
         ),
@@ -132,14 +198,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOrdersList(List<Map<String, dynamic>> orders) {
+    final loc = AppLocalizations.of(context);
     if (orders.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 60, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No orders here', style: TextStyle(color: Colors.grey, fontSize: 16)),
+            const Icon(Icons.inbox_outlined, size: 60, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(loc.t('no_orders'), style: const TextStyle(color: Colors.grey, fontSize: 16)),
           ],
         ),
       );
@@ -156,6 +223,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   void _showTrackOrderSheet(Map<String, dynamic> order) {
+    final loc = AppLocalizations.of(context);
     final orderId = order['orderId'];
     final total = (order['totalAmount'] as num).toStringAsFixed(2);
     final itemCount = order['itemCount'] ?? 0;
@@ -209,34 +277,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ],
             ),
             const SizedBox(height: 28),
-            const Text('Order Tracking', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(loc.t('order_tracking'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 20),
             _buildTrackStep(
               icon: Icons.receipt_long_outlined,
-              title: 'Order Placed',
-              subtitle: 'Your order has been confirmed',
+              title: loc.t('order_placed_step'),
+              subtitle: loc.t('order_placed_sub'),
               isDone: true,
               isLast: false,
             ),
             _buildTrackStep(
               icon: Icons.inventory_2_outlined,
-              title: 'Processing',
-              subtitle: 'Preparing your items',
+              title: loc.t('processing'),
+              subtitle: loc.t('processing_sub'),
               isDone: true,
               isLast: false,
             ),
             _buildTrackStep(
               icon: Icons.local_shipping_outlined,
-              title: 'Shipped',
-              subtitle: 'On the way to you',
+              title: loc.t('shipped'),
+              subtitle: loc.t('shipped_sub'),
               isDone: false,
               isActive: true,
               isLast: false,
             ),
             _buildTrackStep(
               icon: Icons.check_circle_outline,
-              title: 'Delivered',
-              subtitle: 'Arriving at your address',
+              title: loc.t('delivered_step'),
+              subtitle: loc.t('delivered_sub'),
               isDone: false,
               isLast: true,
             ),
@@ -253,7 +321,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Estimated delivery: 3-5 business days',
+                      loc.t('estimated_delivery'),
                       style: TextStyle(color: Colors.orange[800], fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -343,6 +411,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
+    final loc = AppLocalizations.of(context);
     final isDelivered = order['status'] == 'delivered';
     final orderId = order['orderId'];
     final total = (order['totalAmount'] as num).toStringAsFixed(2);
@@ -395,7 +464,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ),
               ),
               Text(
-                isDelivered ? 'Delivered' : 'In Progress',
+                isDelivered ? loc.t('delivered') : loc.t('in_progress'),
                 style: TextStyle(
                   color: isDelivered ? Colors.green : Colors.orange,
                   fontWeight: FontWeight.bold,
@@ -414,17 +483,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
               ElevatedButton(
                 onPressed: isDelivered
-                    ? null
+                    ? () => _reorder(orderId)
                     : () => _showTrackOrderSheet(order),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDelivered ? Colors.grey[200] : Colors.blueAccent,
-                  foregroundColor: isDelivered ? Colors.black : Colors.white,
+                  backgroundColor: isDelivered ? const Color(0xFF4CAF50) : Colors.blueAccent,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                   minimumSize: Size.zero,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: Text(isDelivered ? 'Reorder' : 'Track Order'),
+                child: Text(isDelivered ? loc.t('reorder') : loc.t('track_order')),
               ),
             ],
           ),

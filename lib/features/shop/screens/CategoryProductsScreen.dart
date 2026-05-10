@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/shop/screens/product_details.dart';
 
 class CategoryProductsScreen extends StatelessWidget {
@@ -13,7 +14,7 @@ class CategoryProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Filter products by category name
+    final loc = AppLocalizations.of(context);
     String searchKey = "";
     if (categoryName == 'Buy Dresses') {
       searchKey = 'Buy';
@@ -27,7 +28,6 @@ class CategoryProductsScreen extends StatelessWidget {
       return dress['category'] == searchKey;
     }).toList();
 
-    // ✅ Category colors (same as HomeScreen)
     Color getCategoryColor(String category) {
       switch (category) {
         case 'Buy':
@@ -54,7 +54,7 @@ class CategoryProductsScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {},
-            child: const Text('Sort', style: TextStyle(color: Colors.grey)),
+            child: Text(loc.t('sort'), style: const TextStyle(color: Colors.grey)),
           ),
         ],
       ),
@@ -70,7 +70,7 @@ class CategoryProductsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No dresses in $categoryName yet',
+                    loc.t('no_dresses', params: {'category': categoryName}),
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -79,7 +79,7 @@ class CategoryProductsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Check back soon for new arrivals!',
+                    loc.t('check_back'),
                     style: TextStyle(color: Colors.grey[500]),
                   ),
                 ],
@@ -90,7 +90,7 @@ class CategoryProductsScreen extends StatelessWidget {
               physics: const BouncingScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisExtent: 280, // ✅ Same as HomeScreen
+                mainAxisExtent: 280,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
@@ -101,23 +101,23 @@ class CategoryProductsScreen extends StatelessWidget {
                   context,
                   dress,
                   getCategoryColor(searchKey),
+                  loc,
                 );
               },
             ),
     );
   }
 
-  // ✅ SAME EXACT DESIGN as HomeScreen Product Grid
   Widget _buildProductCard(
     BuildContext context,
     Map<String, dynamic> dress,
     Color categoryColor,
+    AppLocalizations loc,
   ) {
-    bool isFavorited = false; // You can make this dynamic later
+    bool isFavorited = false;
 
     return GestureDetector(
       onTap: () {
-        // ✅ Navigate to ProductDetails with dress data
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -140,7 +140,6 @@ class CategoryProductsScreen extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // ✅ Image Section (Identical to HomeScreen)
             SizedBox(
               height: 180,
               child: Stack(
@@ -166,7 +165,6 @@ class CategoryProductsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // ✅ Category Badge
                   Positioned(
                     top: 12,
                     left: 12,
@@ -189,17 +187,15 @@ class CategoryProductsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // ✅ Favorite Button
                   Positioned(
                     top: 12,
                     right: 12,
                     child: GestureDetector(
                       onTap: () {
-                        // Add to wishlist logic here
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              '${dress['name']} added to wishlist! ♥',
+                              '${dress['name']} ${loc.t('added_to_wishlist')}',
                             ),
                           ),
                         );
@@ -226,7 +222,6 @@ class CategoryProductsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // ✅ Add to Cart Button
                   Positioned(
                     bottom: -8,
                     right: 12,
@@ -234,7 +229,7 @@ class CategoryProductsScreen extends StatelessWidget {
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${dress['name']} added to cart! 🛒'),
+                            content: Text('${dress['name']} ${loc.t('added_to_cart')}'),
                           ),
                         );
                       },
@@ -262,7 +257,6 @@ class CategoryProductsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // ✅ Info Section (Identical to HomeScreen)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),

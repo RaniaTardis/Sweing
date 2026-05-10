@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:convert'; // لتحويل البيانات إلى JSON
-import 'package:http/http.dart'
-    as http; // للمطالبة بإضافة المكتبة في pubspec.yaml
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/auth/screens/password_recovery_screen.dart';
 import 'package:my_sweing_app/features/auth/screens/signup_screen.dart';
 import 'package:my_sweing_app/features/main_wrapper/main_wrapper.dart';
-import 'package:my_sweing_app/features/shop/screens/home_screen.dart';
-import 'package:my_sweing_app/features/shop/screens/product_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,21 +15,20 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // 1. تعريف المتحكمات لاستخراج النص من الحقول
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isPasswordObscured = true;
-  bool _isLoading = false; // لمتابعة حالة الاتصال بالسيرفر
+  bool _isLoading = false;
 
-  // 2. دالة تسجيل الدخول والاتصال بـ Node.js
   Future<void> _login() async {
+    final loc = AppLocalizations.of(context);
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        SnackBar(content: Text(loc.t('please_fill'))),
       );
       return;
     }
@@ -50,16 +47,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // ✅ حفظ userId في SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setInt('userId', data['user']['id']);
         await prefs.setString('userToken', data['token']);
         await prefs.setString('userEmail', data['user']['email']);
         await prefs.setString('userName', data['user']['name']);
 
-        print('✅ User ID saved: ${data['user']['id']}');
+        print('User ID saved: ${data['user']['id']}');
 
-        // الانتقال إلى MainWrapper
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainWrapper()),
@@ -71,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not connect to server')),
+        SnackBar(content: Text(loc.t('connect_error'))),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -80,6 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -114,30 +110,28 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    const Text(
-                      'Log in Now',
-                      style: TextStyle(
+                    Text(
+                      loc.t('log_in_now'),
+                      style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'please login to continue using the app',
-                      style: TextStyle(color: Colors.black87, fontSize: 15),
+                    Text(
+                      loc.t('login_subtitle'),
+                      style: const TextStyle(color: Colors.black87, fontSize: 15),
                     ),
                     const SizedBox(height: 40),
 
-                    // حقل الإيميل
                     _buildTextField(
-                      hint: 'Email',
+                      hint: loc.t('email'),
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 20),
 
-                    // حقل الباسورد
                     _buildPasswordField(),
 
                     Align(
@@ -152,9 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'forgot Password?',
-                          style: TextStyle(
+                        child: Text(
+                          loc.t('forgot_password'),
+                          style: const TextStyle(
                             color: Color(0xFF5C5C5C),
                             fontSize: 13,
                           ),
@@ -163,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // زر تسجيل الدخول مع حالة التحميل
                     SizedBox(
                       width: double.infinity,
                       height: 60,
@@ -181,9 +174,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? const CircularProgressIndicator(
                                 color: Colors.black,
                               )
-                            : const Text(
-                                'Log in',
-                                style: TextStyle(
+                            : Text(
+                                loc.t('log_in'),
+                                style: const TextStyle(
                                   fontSize: 24,
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -233,11 +226,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPasswordField() {
+    final loc = AppLocalizations.of(context);
     return TextField(
       controller: _passwordController,
       obscureText: _isPasswordObscured,
       decoration: InputDecoration(
-        hintText: 'Password',
+        hintText: loc.t('password'),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -270,6 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildSignupLink(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -278,13 +273,13 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       },
       child: RichText(
-        text: const TextSpan(
-          style: TextStyle(color: Colors.black, fontSize: 14),
+        text: TextSpan(
+          style: const TextStyle(color: Colors.black, fontSize: 14),
           children: [
-            TextSpan(text: "Don't have an account? "),
+            TextSpan(text: loc.t('no_account')),
             TextSpan(
-              text: "Sign up now !!",
-              style: TextStyle(
+              text: loc.t('sign_up_now'),
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: TextDecoration.none,
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/shop/screens/home_screen.dart';
 
 class ReadyScreen extends StatelessWidget {
@@ -6,6 +7,7 @@ class ReadyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -37,7 +39,7 @@ class ReadyScreen extends StatelessWidget {
                         topRight: Radius.circular(35),
                       ),
                       child: Image.asset(
-                        'assets/images/shopping_girls.png', // تإضافة صورتك هنا
+                        'assets/images/shopping_girls.png',
                         height: 250,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -46,10 +48,9 @@ class ReadyScreen extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                 
-                    const Text(
-                      'Ready?',
-                      style: TextStyle(
+                    Text(
+                      loc.t('ready'),
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
@@ -58,10 +59,9 @@ class ReadyScreen extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-               
-                    const Text(
-                      'shope and do all you want',
-                      style: TextStyle(
+                    Text(
+                      loc.t('ready_subtitle'),
+                      style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
                       ),
@@ -69,40 +69,38 @@ class ReadyScreen extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-              
-                 Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 40),
-  child: SizedBox(
-    width: double.infinity,
-    height: 50,
-    child: ElevatedButton(
-      onPressed: () {
-       
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-          ),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFDDE3FE), 
-        foregroundColor: Colors.black,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-      ),
-      child: const Text(
-        "Let's Start",
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    ),
-  ),
-),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HomeScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFDDE3FE),
+                            foregroundColor: Colors.black,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: Text(
+                            loc.t('lets_start'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     
                     const SizedBox(height: 40),
                   ],
@@ -111,7 +109,6 @@ class ReadyScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // 5. مؤشر الصفحات (Dots Indicator)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -127,7 +124,6 @@ class ReadyScreen extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildDot({required bool isActive}) {
     return Container(
