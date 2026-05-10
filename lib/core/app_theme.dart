@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // تعريف الألوان كـ Constants لسهولة الاستخدام
+ 
   static const Color backgroundColor = Color(0xFFFFFDF8);
   static const Color primaryBlack = Colors.black;
   static const Color accentYellow = Color(0xFFFFD471);
@@ -11,7 +11,7 @@ class AppTheme {
     scaffoldBackgroundColor: backgroundColor,
     primaryColor: primaryBlack,
     
-    // تنسيق الخطوط
+
     textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontSize: 32, 
@@ -22,7 +22,7 @@ class AppTheme {
       bodyLarge: TextStyle(fontSize: 16, color: primaryBlack),
     ),
 
-    // تنسيق الأزرار الافتراضي
+
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryBlack,

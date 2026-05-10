@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:my_sweing_app/core/app_localizations.dart';
 import 'package:my_sweing_app/features/auth/screens/password_recovery_screen.dart';
-import 'package:my_sweing_app/features/auth/screens/signup_screen.dart'; // استيراد صفحة التسجيل
+import 'package:my_sweing_app/features/auth/screens/signup_screen.dart';
+import 'package:my_sweing_app/features/main_wrapper/main_wrapper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,40 +15,92 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // متغير للتحكم في ظهور كلمة السر
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _isPasswordObscured = true;
+  bool _isLoading = false;
+
+  Future<void> _login() async {
+    final loc = AppLocalizations.of(context);
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.t('please_fill'))),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final url = Uri.parse('http://localhost:3000/auth/login');
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": email, "password": password}),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('userId', data['user']['id']);
+        await prefs.setString('userToken', data['token']);
+        await prefs.setString('userEmail', data['user']['email']);
+        await prefs.setString('userName', data['user']['name']);
+
+        print('User ID saved: ${data['user']['id']}');
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainWrapper()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['error'] ?? 'Login failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(loc.t('connect_error'))),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white, // الجزء العلوي أبيض
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. صورة الفتاة في أعلى الصفحة
           Positioned(
             top: 40,
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.35,
             child: Image.asset(
-              'assets/images/LoginGirl.png', // تأكد من اسم الصورة لديك
+              'assets/images/SignGirl.png',
               fit: BoxFit.contain,
             ),
           ),
-
-          // 2. الجزء الأزرق (الخلفية المنحنية) والمحتوى
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
               height: MediaQuery.of(context).size.height * 0.68,
               width: double.infinity,
               decoration: const BoxDecoration(
-                color: Color(0xFFDDE3FE), // اللون الأزرق اللافندر
+                color: Color(0xFFDDE3FE),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(40),
                   topRight: Radius.circular(40),
                 ),
-                // إضافة حدود سوداء خفيفة كما في الصورة
                 border: Border(
                   top: BorderSide(color: Colors.black, width: 1.5),
                 ),
@@ -53,35 +110,34 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    // العنوان الرئيسي
-                    const Text(
-                      'Log in Now',
-                      style: TextStyle(
+                    Text(
+                      loc.t('log_in_now'),
+                      style: const TextStyle(
                         fontSize: 32,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'please login to countinue using the app',
-                      style: TextStyle(color: Colors.black87, fontSize: 15),
+                    Text(
+                      loc.t('login_subtitle'),
+                      style: const TextStyle(color: Colors.black87, fontSize: 15),
                     ),
                     const SizedBox(height: 40),
 
-                    // حقل البريد الإلكتروني
-                    _buildTextField(hint: 'Email'),
+                    _buildTextField(
+                      hint: loc.t('email'),
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
                     const SizedBox(height: 20),
 
-                    // حقل كلمة السر مع العين التفاعلية
                     _buildPasswordField(),
 
-                    // رابط نسيت كلمة السر
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton(
                         onPressed: () {
-                          // الانتقال لصفحة استعادة كلمة المرور
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -90,52 +146,46 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text(
-                          'forgot , Password?',
-                          style: TextStyle(
+                        child: Text(
+                          loc.t('forgot_password'),
+                          style: const TextStyle(
                             color: Color(0xFF5C5C5C),
                             fontSize: 13,
                           ),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
 
-                    // زر الدخول (Log in)
                     SizedBox(
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // وظيفة تسجيل الدخول
-                        },
+                        onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFFFD573,
-                          ), // اللون الأصفر
+                          backgroundColor: const Color(0xFFFFD573),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(35),
                           ),
                           elevation: 0,
                           side: const BorderSide(color: Colors.black12),
                         ),
-                        child: const Text(
-                          'Log in',
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.black,
+                              )
+                            : Text(
+                                loc.t('log_in'),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
-
                     const SizedBox(height: 25),
-
-                    // رابط "ليس لدي حساب" للذهاب لصفحة التسجيل
                     _buildSignupLink(context),
-
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -147,9 +197,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // دالة بناء حقل الإدخال العادي
-  Widget _buildTextField({required String hint}) {
+  Widget _buildTextField({
+    required String hint,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
@@ -170,12 +225,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // دالة بناء حقل كلمة السر مع التحكم بالعين
   Widget _buildPasswordField() {
+    final loc = AppLocalizations.of(context);
     return TextField(
+      controller: _passwordController,
       obscureText: _isPasswordObscured,
       decoration: InputDecoration(
-        hintText: 'Password',
+        hintText: loc.t('password'),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
@@ -207,24 +263,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // دالة بناء رابط الانتقال لصفحة التسجيل
   Widget _buildSignupLink(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () {
-        // الانتقال لصفحة SignupScreen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const SignupScreen()),
         );
       },
       child: RichText(
-        text: const TextSpan(
-          style: TextStyle(color: Colors.black, fontSize: 14),
+        text: TextSpan(
+          style: const TextStyle(color: Colors.black, fontSize: 14),
           children: [
-            TextSpan(text: "does not have an account , "),
+            TextSpan(text: loc.t('no_account')),
             TextSpan(
-              text: "sign in now !!",
-              style: TextStyle(
+              text: loc.t('sign_up_now'),
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 decoration: TextDecoration.none,
               ),

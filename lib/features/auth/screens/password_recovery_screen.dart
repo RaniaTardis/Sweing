@@ -10,7 +10,7 @@ class PasswordRecoveryScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. الدوائر في الزاوية العلوية اليمنى
+      
           Positioned(
             top: 0,
             right: 0,
@@ -24,7 +24,7 @@ class PasswordRecoveryScreen extends StatelessWidget {
                 child: Transform.translate(
                   offset: const Offset(80, -80),
                   child: Image.asset(
-                    'assets/images/Untitled.png', // تأكد من وجود ملف الدوائر
+                    'assets/images/Untitled.png', 
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -32,7 +32,7 @@ class PasswordRecoveryScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. المحتوى الرئيسي
+ 
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -41,7 +41,7 @@ class PasswordRecoveryScreen extends StatelessWidget {
                 children: [
                   const Spacer(flex: 3),
 
-                  // العنوان
+        
                   const Text(
                     'Password Recovery',
                     style: TextStyle(
@@ -63,14 +63,14 @@ class PasswordRecoveryScreen extends StatelessWidget {
 
                   const SizedBox(height: 40),
 
-                  // خيار الـ Email فقط (كما طلبت)
+ 
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 25,
                       vertical: 15,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFD573), // اللون الأصفر المشمشي
+                      color: const Color(0xFFFFD573),
                       borderRadius: BorderRadius.circular(30),
                       border: Border.all(color: Colors.black12, width: 1),
                     ),
@@ -87,7 +87,7 @@ class PasswordRecoveryScreen extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        // أيقونة الاختيار (مفعلة دائماً لأنه الخيار الوحيد)
+                    
                         const Icon(
                           Icons.check_circle,
                           color: Colors.white,
@@ -99,13 +99,13 @@ class PasswordRecoveryScreen extends StatelessWidget {
 
                   const Spacer(flex: 2),
 
-                  // زر Next
+           
                   SizedBox(
                     width: double.infinity,
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
-                        // الانتقال لصفحة إدخال كود التحقق (OTP)
+                
                         Navigator.push(
                           context,
                           MaterialPageRoute(

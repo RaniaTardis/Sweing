@@ -9,7 +9,7 @@ class VerifyCodeScreen extends StatefulWidget {
 }
 
 class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
-  // للتحكم في نص الكود
+
   final TextEditingController _otpController = TextEditingController();
 
   @override
@@ -18,7 +18,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. الدوائر في الزاوية العلوية اليمنى (كما في الصورة)
+     
           Positioned(
             top: 0,
             right: 0,
@@ -32,7 +32,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                 child: Transform.translate(
                   offset: const Offset(80, -80),
                   child: Image.asset(
-                    'assets/images/Untitled.png', // تأكد من وجود ملف الدوائر
+                    'assets/images/Untitled.png', 
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -40,7 +40,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
             ),
           ),
 
-          // 2. المحتوى الرئيسي
+     
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
@@ -49,7 +49,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                 children: [
                   const Spacer(flex: 3),
 
-                  // العنوان
+             
                   const Text(
                     'Password Recovery',
                     style: TextStyle(
@@ -71,9 +71,9 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
 
                   const SizedBox(height: 30),
 
-                  // الإيميل المقنع (Masked Email) كما في طلبك
+              
                   const Text(
-                    'wa****d@email.com', // مثال للإيميل المقنع
+                    'wa****d@email.com', 
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -84,27 +84,26 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
 
                   const SizedBox(height: 40),
 
-                  // مربعات إدخال الكود (OTP Inputs)
-                  // قمت بتبسيطها باستخدام TextField واحد بتنسيق خاص
+                  
                   Container(
                     width: 280,
                     child: TextField(
                       controller: _otpController,
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
-                      maxLength: 4, // طول الكود 4 أرقام
+                      maxLength: 4, 
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         letterSpacing:
-                            35, // مسافة كبيرة بين الأرقام لتبدو كمربعات
+                            35, 
                       ),
                       decoration: InputDecoration(
-                        counterText: "", // إخفاء عداد الحروف
+                        counterText: "", 
                         filled: true,
                         fillColor: const Color(
                           0xFFDDE3FE,
-                        ), // لون المربعات الأزرق اللافندر
+                        ), 
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15),
                           borderSide: BorderSide.none,
@@ -119,13 +118,13 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
 
                   const Spacer(flex: 2),
 
-                  // زر Done
+                  
                   SizedBox(
                     width: double.infinity,
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
-                        // الانتقال لصفحة تعيين كلمة المرور الجديدة
+                     
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -154,7 +153,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                   // زر Send again
                   TextButton(
                     onPressed: () {
-                      // وظيفة إعادة إرسال الكود
+                  
                     },
                     child: const Text(
                       'send again',
@@ -162,7 +161,7 @@ class _VerifyCodeScreenState extends State<VerifyCodeScreen> {
                     ),
                   ),
 
-                  // زر Cancel
+                
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(

@@ -6,19 +6,19 @@ class SetupNewPasswordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // الحصول على أبعاد الشاشة لجعل المساحات متجاوبة
+
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        // الحل الأساسي: استخدام SingleChildScrollView لمنع خطأ الـ Overflow
+  
         child: SingleChildScrollView(
-          // BouncingScrollPhysics تعطي شعوراً أفضل عند التمرير في iOS و Android
+  
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 30.0),
           child: ConstrainedBox(
-            // نحدد ارتفاع أدنى للحاوية ليساوي طول الشاشة (ناقص مساحة الـ SafeArea)
+          
             constraints: BoxConstraints(
               minHeight:
                   screenHeight -
@@ -31,7 +31,7 @@ class SetupNewPasswordScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 20),
 
-                  // 1. الصورة التوضيحية
+                 
                   SizedBox(
                     height: screenHeight * 0.25,
                     child: Image.asset(
@@ -42,7 +42,7 @@ class SetupNewPasswordScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // 2. النصوص العنوانية
+                 
                   const Text(
                     'Setup New Password',
                     style: TextStyle(
@@ -64,30 +64,30 @@ class SetupNewPasswordScreen extends StatelessWidget {
 
                   const SizedBox(height: 40),
 
-                  // 3. حقول إدخال كلمة السر
+         
                   _buildPasswordField(hint: 'New Password'),
                   const SizedBox(height: 15),
                   _buildPasswordField(hint: 'Repeat Password'),
 
-                  // نستخدم Spacer داخل IntrinsicHeight ليدفع الأزرار للأسفل
+            
                   const Spacer(),
 
                   const SizedBox(height: 20),
 
-                  // 4. زر Save
+                
                   SizedBox(
                     width: double.infinity,
                     height: 60,
                     child: ElevatedButton(
                       onPressed: () {
-                        // الانتقال لصفحة "Ready" ومسح جميع الصفحات السابقة من الـ Stack
+                       
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ReadyScreen(),
                           ),
                           (route) =>
-                              false, // هذا السطر يمنع العودة للخلف لصفحات إعداد كلمة السر
+                              false, 
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -109,7 +109,7 @@ class SetupNewPasswordScreen extends StatelessWidget {
                   ), 
                   const SizedBox(height: 10),
 
-                  // 5. زر Cancel
+                 
                   TextButton(
                     onPressed: () {
                       Navigator.pop(context);
