@@ -64,9 +64,30 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       } else {
         setState(() => _loadingDresses = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to load products. Try again later.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => _loadingDresses = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to load products. Check your connection.'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _loadDresses,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -756,10 +777,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
           if (_favoritedIds.contains(productId)) {
-              _favoritedIds.remove(productId);
-            } else {
-              _favoritedIds.add(productId);
-            }
+            _favoritedIds.remove(productId);
+          } else {
+            _favoritedIds.add(productId);
+          }
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -911,35 +932,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(24),
                         ),
-                        child: Image.asset(
-                          dress['image'] ?? '',
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: 180,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                height: 180,
-                                color: Colors.grey[200],
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.image_not_supported,
-                                      size: 50,
-                                      color: Colors.grey[400],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      loc.t('image_not_found'),
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                        ),
+                        child: dress['image'] != null && (dress['image'] as String).startsWith('http')
+                          ? Image.network(
+                              dress['image'] as String,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 180,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.broken_image, color: Colors.grey),
+                            )
+                          : Image.asset(
+                              dress['image'] ?? 'assets/images/placeholder.png',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: 180,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(Icons.broken_image, color: Colors.grey),
+                            ),
                       ),
                       Positioned(
                         top: 12,
