@@ -353,18 +353,27 @@ class _CartScreenState extends State<CartScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              item['productImage'] ?? '',
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 80,
-                height: 80,
-                color: Colors.grey[200],
-                child: const Icon(Icons.image_not_supported, color: Colors.grey),
-              ),
-            ),
+            child: (item['productImage'] ?? '').toString().startsWith('http')
+                ? Image.network(
+                    item['productImage'] as String,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80, height: 80, color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  )
+                : Image.asset(
+                    item['productImage'] ?? '',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80, height: 80, color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    ),
+                  ),
           ),
           const SizedBox(width: 12),
           Expanded(

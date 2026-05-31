@@ -24,9 +24,9 @@ class CategoryProductsScreen extends StatelessWidget {
       searchKey = 'Custom';
     }
 
-    final filteredProducts = allProducts.where((dress) {
-      return dress['category'] == searchKey;
-    }).toList();
+    final filteredProducts = searchKey.isEmpty
+        ? List<Map<String, dynamic>>.from(allProducts)
+        : allProducts.where((dress) => dress['category'] == searchKey).toList();
 
     Color getCategoryColor(String category) {
       switch (category) {
@@ -149,21 +149,29 @@ class CategoryProductsScreen extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
-                    child: Image.asset(
-                      dress['image'] ?? '',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 180,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 180,
-                        color: Colors.grey[200],
-                        child: const Icon(
-                          Icons.image_not_supported,
-                          size: 50,
-                          color: Color.fromARGB(255, 175, 175, 175),
+                    child: (dress['image'] ?? '').toString().startsWith('http')
+                      ? Image.network(
+                          dress['image'] as String,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 180,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 180,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image_not_supported, size: 50, color: Color.fromARGB(255, 175, 175, 175)),
+                          ),
+                        )
+                      : Image.asset(
+                          dress['image'] ?? '',
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 180,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 180,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image_not_supported, size: 50, color: Color.fromARGB(255, 175, 175, 175)),
+                          ),
                         ),
-                      ),
-                    ),
                   ),
                   Positioned(
                     top: 12,

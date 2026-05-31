@@ -21,7 +21,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   Set<int> _favoritedIds = {};
-  bool _loadingDresses = true;
   String? _guestSessionId;
   String? _userToken;
   bool _isGuest = false;
@@ -46,55 +45,48 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadDresses() async {
+  Future<void> _fetchApiDresses() async {
     try {
       final res = await http.get(Uri.parse('$baseUrl/products'));
       if (res.statusCode == 200) {
         final List data = jsonDecode(res.body);
-        setState(() {
-          dresses = data.map<Map<String, dynamic>>((p) => {
-            'id': p['productId'],
-            'name': p['name'],
-            'price': (p['price'] as num).toDouble(),
-            'image': p['imageUrl'] ?? '',
-            'category': p['category'] ?? '',
-            'size': p['size'] ?? '',
-          }).toList();
-          _loadingDresses = false;
-        });
-      } else {
-        setState(() => _loadingDresses = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to load products. Try again later.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        final existingNames = dresses.map((d) => d['name'].toString().toLowerCase()).toSet();
+        final apiDresses = data
+            .map<Map<String, dynamic>>((p) => {
+                  'id': p['productId'],
+                  'name': p['name'],
+                  'price': (p['price'] as num).toDouble(),
+                  'image': p['imageUrl'] ?? '',
+                  'category': p['category'] ?? 'Buy',
+                  'size': p['size'] ?? '',
+                })
+            .where((d) => !existingNames.contains(d['name'].toString().toLowerCase()))
+            .toList();
+        if (apiDresses.isNotEmpty && mounted) {
+          setState(() => dresses = [...dresses, ...apiDresses]);
         }
       }
-    } catch (e) {
-      setState(() => _loadingDresses = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to load products. Check your connection.'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: _loadDresses,
-            ),
-          ),
-        );
-      }
-    }
+    } catch (_) {}
   }
 
   @override
   void initState() {
     super.initState();
-    _loadDresses();
+    dresses = [
+      {'id': 1001, 'name': 'Black Evening Gown', 'price': 85.0, 'image': 'assets/images/black.png', 'category': 'Buy', 'size': 'M'},
+      {'id': 1002, 'name': 'Dark Navy Gown', 'price': 90.0, 'image': 'assets/images/drakBlue.png', 'category': 'Buy', 'size': 'S'},
+      {'id': 1003, 'name': 'Dark Blue Formal', 'price': 75.0, 'image': 'assets/images/darkBlue_2.png', 'category': 'Rent', 'size': 'L'},
+      {'id': 1004, 'name': 'Gray Elegant Dress', 'price': 65.0, 'image': 'assets/images/gray.png', 'category': 'Rent', 'size': 'M'},
+      {'id': 1005, 'name': 'Green Summer Dress', 'price': 55.0, 'image': 'assets/images/green.png', 'category': 'Buy', 'size': 'S'},
+      {'id': 1006, 'name': 'Light Blue Casual', 'price': 50.0, 'image': 'assets/images/lightBlue.png', 'category': 'Buy', 'size': 'M'},
+      {'id': 1007, 'name': 'Light Pink Formal', 'price': 70.0, 'image': 'assets/images/lightPink.png', 'category': 'Rent', 'size': 'L'},
+      {'id': 1008, 'name': 'Pink Floral Dress', 'price': 60.0, 'image': 'assets/images/lightPinkFlower.png', 'category': 'Buy', 'size': 'S'},
+      {'id': 1009, 'name': 'Dark Pink Gown', 'price': 95.0, 'image': 'assets/images/pinkDark.png', 'category': 'Rent', 'size': 'M'},
+      {'id': 1010, 'name': 'Red Evening Dress', 'price': 80.0, 'image': 'assets/images/red.png', 'category': 'Buy', 'size': 'M'},
+      {'id': 1011, 'name': 'Skin Tone Dress', 'price': 45.0, 'image': 'assets/images/skin.png', 'category': 'Custom', 'size': 'L'},
+      {'id': 1012, 'name': 'Yellow Summer Dress', 'price': 55.0, 'image': 'assets/images/yellow.png', 'category': 'Buy', 'size': 'S'},
+    ];
+    _fetchApiDresses();
     categories = [
       {
         'title': 'Buy Dresses',
@@ -187,6 +179,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const Spacer(),
+          IconButton(
+            onPressed: _fetchApiDresses,
+            icon: const Icon(Icons.refresh, size: 24, color: Colors.grey),
+            tooltip: 'Refresh',
+          ),
           Container(
             height: 42,
             width: 42,
@@ -496,7 +493,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryProductsScreen(
+                              categoryName: 'All',
+                              allProducts: dresses,
+                            ),
+                          ),
+                        ),
                         child: Text(
                           loc.t('view_all'),
                           style: TextStyle(
@@ -515,9 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     horizontal: 20,
                     vertical: 8,
                   ),
-                  child: _loadingDresses
-                      ? const Center(child: CircularProgressIndicator())
-                      : _buildProductGrid(),
+                  child: _buildProductGrid(),
                 ),
                 const SizedBox(height: 100),
               ],

@@ -279,26 +279,41 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           maxScale: 4.0,
                           panEnabled: true,
                           transformationController: TransformationController(),
-                          child: Image.asset(
-                            dressImages[index],
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[200],
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.image_not_supported,
-                                        size: 64, color: Colors.grey),
-                                    const SizedBox(height: 8),
-                                    Text(loc.t('image_not_available'),
-                                        style: const TextStyle(color: Colors.grey)),
-                                  ],
+                          child: dressImages[index].startsWith('http')
+                              ? Image.network(
+                                  dressImages[index],
+                                  fit: BoxFit.contain,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                        color: Colors.grey[200],
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                                            const SizedBox(height: 8),
+                                            Text(loc.t('image_not_available'), style: const TextStyle(color: Colors.grey)),
+                                          ],
+                                        ),
+                                      ),
+                                )
+                              : Image.asset(
+                                  dressImages[index],
+                                  fit: BoxFit.contain,
+                                  width: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                        color: Colors.grey[200],
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.image_not_supported, size: 64, color: Colors.grey),
+                                            const SizedBox(height: 8),
+                                            Text(loc.t('image_not_available'), style: const TextStyle(color: Colors.grey)),
+                                          ],
+                                        ),
+                                      ),
                                 ),
-                              );
-                            },
-                          ),
                         );
                       },
                     ),
