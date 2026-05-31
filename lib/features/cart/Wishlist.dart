@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/features/shop/screens/product_details.dart';
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 
 class WishlistPage extends StatefulWidget {
    final int? userId;
@@ -52,7 +53,7 @@ class _WishlistPageState extends State<WishlistPage> {
     final prefs = await SharedPreferences.getInstance();
     final int? userId = widget.userId ?? prefs.getInt('userId');
 
-    String url = 'http://localhost:3000/wishlist';
+    String url = '$baseUrl/wishlist';
     if (userId != null) {
       url += '?userId=$userId';
     }
@@ -84,7 +85,7 @@ Future<void> _toggleWishlist(int productId) async {
     final wishlistId = item['wishlistId'];
 
     final response = await http.delete(
-      Uri.parse('http://localhost:3000/wishlist/$wishlistId'),
+      Uri.parse('$baseUrl/wishlist/$wishlistId'),
       headers: {
         if (_userToken != null) 'Authorization': 'Bearer $_userToken',
         if (_guestSessionId != null) 'Guest-Session': _guestSessionId!,
@@ -116,7 +117,7 @@ Future<void> _toggleWishlist(int productId) async {
       final item = wishlistItems.firstWhere((i) => i['productId'] == productId);
 
       final response = await http.post(
-        Uri.parse('http://localhost:3000/cart/add'),
+        Uri.parse('$baseUrl/cart/add'),
         headers: {
           'Content-Type': 'application/json',
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',

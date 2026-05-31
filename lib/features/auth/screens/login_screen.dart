@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/features/auth/screens/password_recovery_screen.dart';
 import 'package:my_sweing_app/features/auth/screens/signup_screen.dart';
 import 'package:my_sweing_app/features/main_wrapper/main_wrapper.dart';
@@ -36,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final url = Uri.parse('http://localhost:3000/auth/login');
+      final url = Uri.parse('$baseUrl/auth/login');
 
       final response = await http.post(
         url,

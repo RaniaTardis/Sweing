@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 
 class AllReviewsScreen extends StatefulWidget {
   final int? productId;
@@ -47,7 +48,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
         return;
       }
       final response = await http.get(
-        Uri.parse('http://localhost:3000/reviews?productId=${widget.productId}'),
+        Uri.parse('$baseUrl/reviews?productId=${widget.productId}'),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -68,7 +69,7 @@ class _AllReviewsScreenState extends State<AllReviewsScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/reviews'),
+        Uri.parse('$baseUrl/reviews'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_userToken',

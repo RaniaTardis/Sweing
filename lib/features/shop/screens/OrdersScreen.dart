@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int? userId;
@@ -40,11 +41,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
       final headers = {'Authorization': 'Bearer $_userToken'};
 
       final pendingRes = await http.get(
-        Uri.parse('http://localhost:3000/orders?userId=$userId&status=pending'),
+        Uri.parse('$baseUrl/orders?userId=$userId&status=pending'),
         headers: headers,
       );
       final deliveredRes = await http.get(
-        Uri.parse('http://localhost:3000/orders?userId=$userId&status=delivered'),
+        Uri.parse('$baseUrl/orders?userId=$userId&status=delivered'),
         headers: headers,
       );
 
@@ -76,7 +77,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     try {
       // Fetch the original order items
       final itemsRes = await http.get(
-        Uri.parse('http://localhost:3000/orders/$orderId/items'),
+        Uri.parse('$baseUrl/orders/$orderId/items'),
         headers: {'Authorization': 'Bearer $_userToken'},
       );
 
@@ -94,7 +95,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       int added = 0;
       for (final item in items) {
         final res = await http.post(
-          Uri.parse('http://localhost:3000/cart/add'),
+          Uri.parse('$baseUrl/cart/add'),
           headers: headers,
           body: json.encode({
             'userId': _effectiveUserId,

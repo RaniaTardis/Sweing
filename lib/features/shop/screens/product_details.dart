@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/features/cart/CartScreen.dart';
 import 'package:my_sweing_app/features/cart/Wishlist.dart';
 import 'package:my_sweing_app/features/shop/screens/AllReviewsScreen.dart';
@@ -45,7 +46,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     if (productId == null) return;
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/reviews?productId=$productId'),
+        Uri.parse('$baseUrl/reviews?productId=$productId'),
       );
       if (response.statusCode == 200 && mounted) {
         final data = List<Map<String, dynamic>>.from(json.decode(response.body));
@@ -87,7 +88,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     if (adding) {
       try {
         final response = await http.post(
-          Uri.parse('http://localhost:3000/wishlist/add'),
+          Uri.parse('$baseUrl/wishlist/add'),
           headers: {
             'Content-Type': 'application/json',
             if (token != null) 'Authorization': 'Bearer $token',
@@ -152,7 +153,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('http://localhost:3000/cart/add'),
+        Uri.parse('$baseUrl/cart/add'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',

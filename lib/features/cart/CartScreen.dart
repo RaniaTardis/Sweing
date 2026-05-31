@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/core/app_localizations.dart';
 
 class CartScreen extends StatefulWidget {
@@ -43,7 +44,7 @@ class _CartScreenState extends State<CartScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://localhost:3000/cart?userId=$userId'),
+        Uri.parse('$baseUrl/cart?userId=$userId'),
         headers: {
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',
         },
@@ -65,7 +66,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _updateQuantity(int cartId, int newQuantity) async {
     try {
       await http.put(
-        Uri.parse('http://localhost:3000/cart/$cartId/quantity'),
+        Uri.parse('$baseUrl/cart/$cartId/quantity'),
         headers: {
           'Content-Type': 'application/json',
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',
@@ -84,7 +85,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _removeItem(int cartId) async {
     try {
       await http.delete(
-        Uri.parse('http://localhost:3000/cart/$cartId'),
+        Uri.parse('$baseUrl/cart/$cartId'),
         headers: {
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',
         },
@@ -103,7 +104,7 @@ class _CartScreenState extends State<CartScreen> {
 
     try {
       final addrResponse = await http.get(
-        Uri.parse('http://localhost:3000/user/address/$userId'),
+        Uri.parse('$baseUrl/user/address/$userId'),
         headers: {'Authorization': 'Bearer $_userToken'},
       );
 
@@ -214,7 +215,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _placeOrder(int userId, BuildContext sheetCtx) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/orders/checkout'),
+        Uri.parse('$baseUrl/orders/checkout'),
         headers: {
           'Content-Type': 'application/json',
           if (_userToken != null) 'Authorization': 'Bearer $_userToken',

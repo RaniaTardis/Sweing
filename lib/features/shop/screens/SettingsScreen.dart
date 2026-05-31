@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,7 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/user/address/$userId'),
+        Uri.parse('$baseUrl/user/address/$userId'),
         headers: {'Authorization': 'Bearer $_userToken'},
       );
       if (response.statusCode == 200) {
@@ -149,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://localhost:3000/user/address'),
+        Uri.parse('$baseUrl/user/address'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_userToken',
@@ -261,7 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final response = await http.put(
-        Uri.parse('http://localhost:3000/user/profile'),
+        Uri.parse('$baseUrl/user/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_userToken',

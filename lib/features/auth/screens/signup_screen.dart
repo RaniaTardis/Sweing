@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _signUp() async {
     final loc = AppLocalizations.of(context);
 
-    const String url = "http://localhost:3000/auth/signup";
+    const String url = "$baseUrl/auth/signup";
 
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||

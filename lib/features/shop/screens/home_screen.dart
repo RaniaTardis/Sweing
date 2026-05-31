@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:my_sweing_app/core/app_localizations.dart';
+import 'package:my_sweing_app/core/constants.dart';
 import 'package:my_sweing_app/features/auth/screens/login_screen.dart';
 import 'package:my_sweing_app/features/auth/screens/signup_screen.dart';
 import 'package:my_sweing_app/features/shop/screens/CategoryProductsScreen.dart';
@@ -424,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final response = await http.get(
         Uri.parse(
-          'http://localhost:3000/wishlist?userId=${widget.userId ?? 1}',
+          '$baseUrl/wishlist?userId=${widget.userId ?? 1}',
         ),
         headers: headers,
       );
@@ -453,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final loc = AppLocalizations.of(context);
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/auth/login'),
+        Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'password': password}),
       );
@@ -794,7 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final dress = dresses.firstWhere((d) => d['id'] == productId);
 
-      const url = 'http://localhost:3000/wishlist/add';
+      const url = '$baseUrl/wishlist/add';
 
       final response = await http.post(
         Uri.parse(url),
@@ -863,7 +864,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final dress = dresses.firstWhere((d) => d['id'] == productId);
 
       final response = await http.post(
-        Uri.parse('http://localhost:3000/cart/add'),
+        Uri.parse('$baseUrl/cart/add'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
