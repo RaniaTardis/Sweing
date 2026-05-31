@@ -20,11 +20,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
-  List<bool> _isFavorited = List.filled(12, false);
+  Set<int> _favoritedIds = {};
+  bool _loadingDresses = true;
   String? _guestSessionId;
   String? _userToken;
   bool _isGuest = false;
-  late final List<Map<String, dynamic>> dresses;
+  List<Map<String, dynamic>> dresses = [];
   late final List<Map<String, dynamic>> categories;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -45,97 +46,34 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  Future<void> _loadDresses() async {
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/products'));
+      if (res.statusCode == 200) {
+        final List data = jsonDecode(res.body);
+        setState(() {
+          dresses = data.map<Map<String, dynamic>>((p) => {
+            'id': p['productId'],
+            'name': p['name'],
+            'price': (p['price'] as num).toDouble(),
+            'image': p['imageUrl'] ?? '',
+            'category': p['category'] ?? '',
+            'size': p['size'] ?? '',
+          }).toList();
+          _loadingDresses = false;
+        });
+      } else {
+        setState(() => _loadingDresses = false);
+      }
+    } catch (e) {
+      setState(() => _loadingDresses = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    dresses = [
-      {
-        'id': 1,
-        'name': 'Elegant Red Gown',
-        'price': 45.00,
-        'image': 'assets/images/black_2.png',
-        'image2': 'assets/images/black.png',
-        'category': 'Buy',
-      },
-      {
-        'id': 2,
-        'name': 'Classic Black Dress',
-        'price': 35.00,
-        'image': 'assets/images/darkBlue_2.png',
-        'category': 'Buy',
-      },
-      {
-        'id': 3,
-        'name': 'Bridal White Gown',
-        'price': 120.00,
-        'image': 'assets/images/lightBlue_2.png',
-        'category': 'Rent',
-      },
-      {
-        'id': 4,
-        'name': 'Evening Blue Dress',
-        'price': 55.00,
-        'image': 'assets/images/lightPinkFlower.png',
-        'category': 'Buy',
-      },
-      {
-        'id': 5,
-        'name': 'Party Pink Gown',
-        'price': 65.00,
-        'image': 'assets/images/lightStracBlue_2.png',
-        'category': 'Buy',
-      },
-      {
-        'id': 6,
-        'name': 'Custom Floral',
-        'price': 85.00,
-        'image': 'assets/images/lightstracPink_2.png',
-        'category': 'Custom',
-      },
-      {
-        'id': 7,
-        'name': 'Golden Evening',
-        'price': 75.00,
-        'image': 'assets/images/stracGreen_2.png',
-        'category': 'Rent',
-      },
-      {
-        'id': 8,
-        'name': 'Lace Wedding',
-        'price': 95.00,
-        'image': 'assets/images/yellow_2.png',
-        'category': 'Custom',
-      },
-      {
-        'id': 9,
-        'name': 'Summer Maxi',
-        'price': 28.00,
-        'image': 'assets/images/darkBlue_3.png',
-        'category': 'Buy',
-      },
-      {
-        'id': 10,
-        'name': 'Velvet Red',
-        'price': 60.00,
-        'image': 'assets/images/red_2.png',
-        'category': 'Rent',
-      },
-      {
-        'id': 11,
-        'name': 'Silk Custom',
-        'price': 110.00,
-        'image': 'assets/images/gray_2.png',
-        'category': 'Custom',
-      },
-      {
-        'id': 12,
-        'name': 'Chic Cocktail',
-        'price': 40.00,
-        'image': 'assets/images/skin_2.png',
-        'category': 'Buy',
-      },
-    ];
-
+    _loadDresses();
     categories = [
       {
         'title': 'Buy Dresses',
@@ -169,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _isGuest = (_userToken == null);
-        _isFavorited = List.filled(dresses.length, false);
+        _favoritedIds = {};
       });
 
       if (_userToken != null || _guestSessionId != null) {
@@ -438,9 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         setState(() {
           for (int id in favoriteIds) {
-            if (id <= _isFavorited.length) {
-              _isFavorited[id - 1] = true;
-            }
+            _favoritedIds.add(id);
           }
         });
         print('✅ Loaded ${favoriteIds.length} favorites');
@@ -558,7 +494,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     horizontal: 20,
                     vertical: 8,
                   ),
-                  child: _buildProductGrid(),
+                  child: _loadingDresses
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildProductGrid(),
                 ),
                 const SizedBox(height: 100),
               ],
@@ -817,17 +755,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
-          _isFavorited[productId - 1] = !_isFavorited[productId - 1];
+          if (_favoritedIds.contains(productId)) {
+              _favoritedIds.remove(productId);
+            } else {
+              _favoritedIds.add(productId);
+            }
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _isFavorited[productId - 1]
+              _favoritedIds.contains(productId)
                   ? '${dress['name']} ${loc.t('added_to_wishlist')}'
                   : '${dress['name']} ${loc.t('removed_from_wishlist')}',
             ),
-            backgroundColor: _isFavorited[productId - 1]
+            backgroundColor: _favoritedIds.contains(productId)
                 ? Colors.pink
                 : Colors.grey,
             duration: const Duration(seconds: 2),
@@ -1044,10 +986,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                             child: Icon(
-                              _isFavorited[dress['id'] - 1]
+                              _favoritedIds.contains(dress['id'])
                                   ? Icons.favorite
                                   : Icons.favorite_border,
-                              color: _isFavorited[dress['id'] - 1]
+                              color: _favoritedIds.contains(dress['id'])
                                   ? Colors.red
                                   : Colors.grey[600],
                               size: 22,
