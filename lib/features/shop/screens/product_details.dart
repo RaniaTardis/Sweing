@@ -18,7 +18,7 @@ class ProductDetailsScreen extends StatefulWidget {
 }
 
 class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
-  String selectedSize = 'S';
+  late String selectedSize;
   int selectedImageIndex = 0;
   bool isWishlisted = false;
   final PageController _pageController = PageController();
@@ -29,9 +29,19 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   late List<String> dressImages;
 
+  List<String> get _availableSizes {
+    final sizeStr = widget.dress['size'] as String?;
+    if (sizeStr == null || sizeStr.trim().isEmpty) {
+      return ['S', 'M', 'L', 'XL', '2XL'];
+    }
+    return sizeStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  }
+
   @override
   void initState() {
     super.initState();
+    final sizes = _availableSizes;
+    selectedSize = sizes.isNotEmpty ? sizes.first : 'S';
     dressImages = [
       widget.dress['image'] ?? 'assets/images/placeholder.png',
       widget.dress['image2'] ??
@@ -482,7 +492,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: ['S', 'M', 'L', 'XL', '2XL'].map((size) {
+                    children: _availableSizes.map((size) {
                       bool isSelected = selectedSize == size;
                       return GestureDetector(
                         onTap: () => setState(() => selectedSize = size),
