@@ -73,18 +73,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     dresses = [
-      {'id': 1001, 'name': 'Black Evening Gown', 'price': 85.0, 'image': 'assets/images/black.png', 'category': 'Buy', 'size': 'M'},
-      {'id': 1002, 'name': 'Dark Navy Gown', 'price': 90.0, 'image': 'assets/images/drakBlue.png', 'category': 'Buy', 'size': 'S'},
-      {'id': 1003, 'name': 'Dark Blue Formal', 'price': 75.0, 'image': 'assets/images/darkBlue_2.png', 'category': 'Rent', 'size': 'L'},
-      {'id': 1004, 'name': 'Gray Elegant Dress', 'price': 65.0, 'image': 'assets/images/gray.png', 'category': 'Rent', 'size': 'M'},
-      {'id': 1005, 'name': 'Green Summer Dress', 'price': 55.0, 'image': 'assets/images/green.png', 'category': 'Buy', 'size': 'S'},
-      {'id': 1006, 'name': 'Light Blue Casual', 'price': 50.0, 'image': 'assets/images/lightBlue.png', 'category': 'Buy', 'size': 'M'},
-      {'id': 1007, 'name': 'Light Pink Formal', 'price': 70.0, 'image': 'assets/images/lightPink.png', 'category': 'Rent', 'size': 'L'},
-      {'id': 1008, 'name': 'Pink Floral Dress', 'price': 60.0, 'image': 'assets/images/lightPinkFlower.png', 'category': 'Buy', 'size': 'S'},
-      {'id': 1009, 'name': 'Dark Pink Gown', 'price': 95.0, 'image': 'assets/images/pinkDark.png', 'category': 'Rent', 'size': 'M'},
-      {'id': 1010, 'name': 'Red Evening Dress', 'price': 80.0, 'image': 'assets/images/red.png', 'category': 'Buy', 'size': 'M'},
-      {'id': 1011, 'name': 'Skin Tone Dress', 'price': 45.0, 'image': 'assets/images/skin.png', 'category': 'Custom', 'size': 'L'},
-      {'id': 1012, 'name': 'Yellow Summer Dress', 'price': 55.0, 'image': 'assets/images/yellow.png', 'category': 'Buy', 'size': 'S'},
+      {'id': 1001, 'name': 'Black Evening Gown', 'price': 85.0, 'image': 'assets/images/black.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1002, 'name': 'Dark Navy Gown', 'price': 90.0, 'image': 'assets/images/drakBlue.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1003, 'name': 'Dark Blue Formal', 'price': 75.0, 'image': 'assets/images/darkBlue_2.png', 'category': 'Rent', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1004, 'name': 'Gray Elegant Dress', 'price': 65.0, 'image': 'assets/images/gray.png', 'category': 'Rent', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1005, 'name': 'Green Summer Dress', 'price': 55.0, 'image': 'assets/images/green.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1006, 'name': 'Light Blue Casual', 'price': 50.0, 'image': 'assets/images/lightBlue.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1007, 'name': 'Light Pink Formal', 'price': 70.0, 'image': 'assets/images/lightPink.png', 'category': 'Rent', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1008, 'name': 'Pink Floral Dress', 'price': 60.0, 'image': 'assets/images/lightPinkFlower.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1009, 'name': 'Dark Pink Gown', 'price': 95.0, 'image': 'assets/images/pinkDark.png', 'category': 'Rent', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1010, 'name': 'Red Evening Dress', 'price': 80.0, 'image': 'assets/images/red.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1011, 'name': 'Skin Tone Dress', 'price': 45.0, 'image': 'assets/images/skin.png', 'category': 'Custom', 'size': 'S,M,L,XL,2XL'},
+      {'id': 1012, 'name': 'Yellow Summer Dress', 'price': 55.0, 'image': 'assets/images/yellow.png', 'category': 'Buy', 'size': 'S,M,L,XL,2XL'},
     ];
     _fetchApiDresses();
     categories = [
