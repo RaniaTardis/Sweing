@@ -978,38 +978,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Positioned(
-                        top: 12,
-                        right: 12,
-                        child: GestureDetector(
-                          onTap: () =>
-                              _toggleWishlist(dress['id']),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 250),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 10,
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              _favoritedIds.contains(dress['id'])
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: _favoritedIds.contains(dress['id'])
-                                  ? Colors.red
-                                  : Colors.grey[600],
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
                         bottom: -8,
                         right: 12,
                         child: GestureDetector(
