@@ -235,7 +235,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               final prefs = await SharedPreferences.getInstance();
               final userId = prefs.getInt('userId');
               if (!mounted) return;
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => CartScreen(userId: userId)),
               );
